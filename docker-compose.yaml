@@ -1,0 +1,57 @@
+version: "3"
+services:
+  ndn-node-1:
+    build:
+      context: .
+    working_dir: /workspaces
+    networks:
+      ndn-network:
+        ipv4_address: 172.22.0.2
+    volumes:
+      - .:/workspaces
+    tty: true
+    command: >
+      /bin/bash -c "
+      pip install --upgrade pip &&
+      pip install -r requirements.txt
+    environment:
+      - FUNCITON_FILE_PATH=/workspaces/config/function/function-a.py
+  ndn-node-2:
+    build:
+      context: .
+    working_dir: /workspaces
+    networks:
+      ndn-network:
+        ipv4_address: 172.22.0.3
+    volumes:
+      - .:/workspaces
+    tty: true
+    command: >
+      /bin/bash -c "
+      pip install --upgrade pip &&
+      pip install -r requirements.txt
+    environment:
+      - FUNCITON_FILE_PATH=/workspaces/config/function/function-a.py
+  ndn-node-3:
+    build:
+      context: .
+    working_dir: /workspaces
+    networks:
+      ndn-network:
+        ipv4_address: 172.22.0.4
+    volumes:
+      - .:/workspaces
+    tty: true
+    command: >
+      /bin/bash -c "
+      pip install --upgrade pip &&
+      pip install -r requirements.txt
+    environment:
+      - FUNCITON_FILE_PATH=/workspaces/config/function/function-a.py
+
+networks:
+  ndn-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/24
