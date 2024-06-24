@@ -1,0 +1,1 @@
+config の場所から functions のファイルの一覧を読み、functionノードに対して何を適用するか決定する
