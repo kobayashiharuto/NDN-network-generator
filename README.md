@@ -9,7 +9,7 @@ nfd-start
 ## ルートを確認
 nlsrc routing
 
-## NDN開発環境を作る
+## NDN + NLSRの起動
 ```
 # pip を変えてれば
 pip install -r requirements.txt 
@@ -25,28 +25,23 @@ docker compose exec ndn-node-2 bash
 ./auto_nlsr.sh 2
 ```
 
-### arc
+### 実行テスト(NDN tools)
 ```
-docker compose exec ndn-node-1 bash
-docker compose exec ndn-node-2 bash
-
-cd /workspaces
-./restart.sh
-./auto_nlsr.sh 1
-./auto_nlsr.sh 1
-ndnsec key-gen / | ndnsec cert-install -
-
 # 1
-nfd-start 2> /nfd.log
-nlsr -f nlsr-1.conf &
-nfdc face create tcp4://ndn-node-2
-ndncatchunks /sample.txt
-
-# 2
-nfd-start 2> /nfd.log
-nlsr -f nlsr-2.conf &
-nfdc face create tcp4://ndn-node-1
 echo 'Hello, world!' > /sample.txt
 nlsrc advertise /sample.txt
 ndnputchunks /sample.txt < /sample.txt
+
+# 2
+ndncatchunks /sample.txt
+```
+
+### 実行テスト(python package)
+```
+# 1
+nlsrc advertise /example
+python3 ./example/client_producer.py 
+
+# 2
+python3 ./example/client_consumer.py 
 ```

@@ -1,8 +1,11 @@
+import asyncio
 import logging
 import ndn.utils
 from ndn.app import NDNApp
 from ndn.types import InterestNack, InterestTimeout, InterestCanceled, ValidationFailure
 from ndn.encoding import Name, Component, InterestParam
+
+from utils import send_interest
 
 
 logging.basicConfig(format='[{asctime}]{levelname}:{message}',
@@ -16,14 +19,7 @@ app = NDNApp()
 
 async def main():
     try:
-        timestamp = ndn.utils.timestamp()
-        name = Name.from_str('/example/testApp/randomData') + [Component.from_timestamp(timestamp)]
-        print(f'Sending Interest {Name.to_str(name)}, {InterestParam(must_be_fresh=True, lifetime=6000)}')
-        data_name, meta_info, content = await app.express_interest(
-            name, must_be_fresh=True, can_be_prefix=False, lifetime=6000)
-
-        print(f'Received Data Name: {Name.to_str(data_name)}')
-        print(meta_info)
+        content = await send_interest(app, '/nodeA/func/join/(/nodeA/func/join/(/nodeA/hoge, /nodeA/aa), /nodeA/func/join/(/nodeA/huga, /nodeA/hoxxge))')
         print(bytes(content) if content else None)
     except InterestNack as e:
         print(f'Nacked with reason={e.reason}')
