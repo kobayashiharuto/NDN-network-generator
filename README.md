@@ -1,75 +1,66 @@
-config/functions 配下の、functionノード自体の名前と対応するファイルの exec を呼び出す
-(k8sでconfigごとマウントして、そのファイルのエイリアスを作り、functionが呼び出しているファイルを消してそいつに変更する)
+# NDN Network Generator
 
-## NDN を適当に作る
-docker pull hydrokhoos/ndn-all:arm
-docker run -it hydrokhoos/ndn-all:arm
-nfd-start
+NDN Network を CSV に設定を書くだけで自動的に構築します。
 
-## ルートを確認
-nlsrc routing
+## 使い方
 
-## NDN + NLSRの起動
-```
-# pip を変えてれば
-pip install -r requirements.txt 
+1. config/network_relations.csv にネットワークのつながりを記述
+1. config/node_info にそれぞれのノード起動時のコマンドを記述
+1. 起動
+1. それぞれのコンテナに入る
 
-# 1
-docker compose exec ndn-node-1 bash
-./restart.sh
-./auto_nlsr.sh 1
+### 1. config/network_relations.csv にネットワークのつながりを記述
 
-# 2
-docker compose exec ndn-node-2 bash
-./restart.sh
-./auto_nlsr.sh 2
+network_relations.csv にはノード間のつながりを記述します。
+
+```csv
+node1,node2
+router1,router2
+router2,router3
+producer1,router1
+consumer,router3
 ```
 
-### 実行テスト(NDN tools)
-```
-# 1
-echo 'Hello, world!' > /sample.txt
-nlsrc advertise /sample.txt
-ndnputchunks /sample.txt < /sample.txt
+一番最初の node1,node2 はヘッダーです。
 
-# 2
-ndncatchunks /sample.txt
-```
+上記の記述であれば、`router1 と router2`, `router2 と router3`, `producer1 と router1`, `consumer と router3` が相互につながったネットワークという意味になります。
 
-### 実行テスト(python package)
-```
-# 1
-nlsrc advertise /example
-python3 ./example/client_producer.py 
-
-# 2
-python3 ./example/client_consumer.py 
-```
+![Network Graph](network.svg)
 
 
-## ndndumpログ
+### 2. config/node_info.csv にそれぞれのノード起動時のコマンドを記述
 
-```
-1720069682.979047 IP 172.22.0.3 > 172.22.0.2, TCP, length 98, INTEREST: /ndn/waseda/%C1.Router/router1/nlsr/INFO/%07%20%08%03ndn%08%06waseda%08%08%C1.Router%08%07router2?CanBePrefix&MustBeFresh&Nonce=da7683e9&Lifetime=1000
-1720069682.980428 IP 172.22.0.2 > 172.22.0.3, TCP, length 240, DATA: /ndn/waseda/%C1.Router/router1/nlsr/INFO/%07%20%08%03ndn%08%06waseda%08%08%C1.Router%08%07router2/v=1720069682979
-1720069684.641264 IP 172.22.0.3 > 172.22.0.2, TCP, length 36, INTEREST: /sample.txt/32=metadata?CanBePrefix&MustBeFresh&Nonce=cc25c92f
-1720069684.642755 IP 172.22.0.2 > 172.22.0.3, TCP, length 205, DATA: /sample.txt/32=metadata/v=1720069684642/seg=0
-1720069684.643105 IP 172.22.0.3 > 172.22.0.2, TCP, length 35, INTEREST: /sample.txt/v=1720069638790/seg=1?Nonce=25a51ef5
-1720069684.643569 IP 172.22.0.2 > 172.22.0.3, TCP, length 48, NDNLPv2, NACK (None): /sample.txt/v=1720069638790/seg=1?Nonce=25a51ef5
+次に、node_info.csv にそれぞれのノードで実行するコマンドを書いていきます。
+
+```csv
+node_name,command
+router1,""
+router2,""
+producer1,"python3 ./ndn_clients/producer.py /producer1"
+function1,"python3 ./ndn_clients/function.py /function1"
+consumer,""
 ```
 
-```1
-ndndump: listening on eth0, link-type EN10MB (Ethernet)
-1720069776.013066 IP 172.22.0.3 > 172.22.0.2, TCP, length 36, INTEREST: /sample.txt/32=metadata?CanBePrefix&MustBeFresh&Nonce=70dc1807
-1720069776.015100 IP 172.22.0.2 > 172.22.0.3, TCP, length 203, DATA: /sample.txt/32=metadata/v=1720069776014/seg=0
-1720069776.015906 IP 172.22.0.3 > 172.22.0.2, TCP, length 35, INTEREST: /sample.txt/v=1720069638790/seg=1?Nonce=89eada64
-1720069776.016868 IP 172.22.0.2 > 172.22.0.3, TCP, length 48, NDNLPv2, NACK (None): /sample.txt/v=1720069638790/seg=1?Nonce=89eada64
+特に実行しない場合は空文字列を入れます。
+
+また、`ndn_clients/` にサンプル的に動かせる producer や function のプログラムがあります。
+
+### 3. 起動
+
+以下で起動します。これにより、自動的に全てのノードが生成され、設定を元にNLSRの設定がされ、faceが貼られ、設定した起動時コマンドが実行されます。
+
+```shell
+python src/main.py
 ```
 
-```2
-ndndump: listening on eth0, link-type EN10MB (Ethernet)
-1720069776.013003 IP 172.22.0.3 > 172.22.0.2, TCP, length 36, INTEREST: /sample.txt/32=metadata?CanBePrefix&MustBeFresh&Nonce=70dc1807
-1720069776.015144 IP 172.22.0.2 > 172.22.0.3, TCP, length 203, DATA: /sample.txt/32=metadata/v=1720069776014/seg=0
-1720069776.015893 IP 172.22.0.3 > 172.22.0.2, TCP, length 35, INTEREST: /sample.txt/v=1720069638790/seg=1?Nonce=89eada64
-1720069776.016881 IP 172.22.0.2 > 172.22.0.3, TCP, length 48, NDNLPv2, NACK (None): /sample.txt/v=1720069638790/seg=1?Nonce=89eada64
+### 4. それぞれのコンテナに入る
+
+`docker-compose.yml` は `generated/` の中に自動的に生成されています。
+
+このディレクトリに移動すれば `docker compose` 系のコマンドを使うことができます。
+
+以下のようにコンテナに入れます。(ノード名が `producer` のコンテナに入りたい場合。指定したノード名とコンテナ名は対応しています。)
+
+```shell
+docker compose exec consumer bash
 ```
