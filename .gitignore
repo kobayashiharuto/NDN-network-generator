@@ -84,3 +84,6 @@ venv.bak/
 
 # Virtualenv
 .pyenv/
+
+# 自動生成されたファイルのディレクトリ
+generated/
