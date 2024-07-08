@@ -4,6 +4,12 @@ NDN Network を CSV に設定を書くだけで自動的に構築します。
 
 ノードの設定、NLSR の設定、face を貼るところまで全て自動で行います。
 
+## 依存関係のインストール
+
+```
+pip install -r requirements.txt
+```
+
 ## 使い方
 
 1. `config/network_relations.csv` にネットワークのつながりを記述
