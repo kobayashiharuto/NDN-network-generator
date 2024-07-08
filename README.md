@@ -2,16 +2,18 @@
 
 NDN Network を CSV に設定を書くだけで自動的に構築します。
 
+ノードの設定、NLSR の設定、face を貼るところまで全て自動で行います。
+
 ## 使い方
 
-1. config/network_relations.csv にネットワークのつながりを記述
-1. config/node_info にそれぞれのノード起動時のコマンドを記述
+1. `config/network_relations.csv` にネットワークのつながりを記述
+1. `config/node_info.csv` にそれぞれのノード起動時のコマンドを記述
 1. 起動
 1. それぞれのコンテナに入る
 
-### 1. config/network_relations.csv にネットワークのつながりを記述
+### 1. `config/network_relations.csv` にネットワークのつながりを記述
 
-network_relations.csv にはノード間のつながりを記述します。
+`network_relations.csv` にはノード間のつながりを記述します。
 
 ```csv
 node1,node2
@@ -28,9 +30,9 @@ consumer,router3
 ![Network Graph](network.svg)
 
 
-### 2. config/node_info.csv にそれぞれのノード起動時のコマンドを記述
+### 2. `config/node_info.csv` にそれぞれのノード起動時のコマンドを記述
 
-次に、node_info.csv にそれぞれのノードで実行するコマンドを書いていきます。
+次に、`node_info.csv` にそれぞれのノードで実行するコマンドを書いていきます。
 
 ```csv
 node_name,command
