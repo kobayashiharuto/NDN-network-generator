@@ -1,10 +1,7 @@
 #!/bin/bash
 
-# Check if a configuration file is provided
-if [ $# -ne 1 ]; then
-  echo "Usage: $0 <node number>"
-  exit 1
-fi
+# これは NLSR の設定ファイルのパスを元に、NLSR を起動し、設定ファイルに記載されている neighbor の情報を元に face を作成するスクリプトです。
+# 環境変数 NLSR_CONFIG_FILE_PATH に NLSR の設定ファイルのパスを指定してください。
 
 # もしNLSRの設定ファイルが存在しない場合はエラーを出力して終了
 if [ ! -f "$NLSR_CONFIG_FILE_PATH" ]; then
