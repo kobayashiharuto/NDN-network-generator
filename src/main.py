@@ -4,9 +4,13 @@ import shutil
 from utils.read_network_relations_from_csv import read_network_relations_from_csv
 from utils.docker_compose_generator import NodeInfoForDockerCompose, docker_compose_generator
 from utils.nlsr_config_generator import nlsr_config_generator
+from utils.read_node_info_from_csv import read_node_info_from_csv
 
 # ネットワーク関係のCSVファイルのパス
 NETWORK_RELATIONS_PATH = './config/network_relations.csv'
+
+# ノード情報のCSVファイルのパス
+NODE_INFO_PATH = './config/node_info.csv'
 
 # docker-compose.yml に使う dockerfile のパス
 DOCKERFILE_PATH = './config/dockerfile'
@@ -39,19 +43,27 @@ def main():
         with open(f'{NLSR_CONFIG_DIR}/{node}.conf', 'w') as f:
             f.write(nlsr_config)
     
-    # Docker Compose ファイルを生成
-    node_infos = []
+    # ノード情報を読み込む
+    node_infos = read_node_info_from_csv(NODE_INFO_PATH)
+    
+    # 情報を加工して Docker Compose ファイルを生成
+    node_info_for_docker_compose = []
     for node in relations.keys():
-        node_infos.append(NodeInfoForDockerCompose(
+        command = node_infos[node].command
+
+        # もしコマンドが空文字列だった場合、デフォルトのコマンドを設定
+        if command == '':
+            command = 'tail -f /dev/null'
+
+        node_info_for_docker_compose.append(NodeInfoForDockerCompose(
             node_name=node,
             environments={
-                'FUNCITON_FILE_PATH': f'/workspaces/config/function/{node}.py',
                 'NLSR_CONFIG_FILE_PATH': f'/workspaces/generated/nlsr/{node}.conf'
             },
-            command='bash -c " ./shell/restart.sh && ./shell/auto_nlsr.sh 1 && tail -f /dev/null"'
+            command=f'bash -c " ./shell/restart.sh && ./shell/auto_nlsr.sh 1 && {command}"'
         ))
     
-    docker_compose = docker_compose_generator(node_infos)
+    docker_compose = docker_compose_generator(node_info_for_docker_compose)
     with open(DOCKER_COMPOSE_PATH, 'w') as f:
         f.write(docker_compose)
 

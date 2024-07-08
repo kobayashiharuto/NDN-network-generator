@@ -4,7 +4,7 @@ import sys
 def on_interest(name: str) -> str:
     print(f"Interest: {name}")
     # name のスラッシュをスペースにして返す
-    return name[1:].replace("/", " ").encode()
+    return name[1:].replace("/", " ")
 
 if __name__ == '__main__':
     producer = NDNProducer()

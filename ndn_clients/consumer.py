@@ -17,9 +17,9 @@ app = NDNApp()
 
 async def main():
     try:
-        # content = await send_interest(app, '/nodeX/aaaa')
-        content = await send_interest(app, '/nodeCCC/aaa/(/nodeCCC/aaa, /nodeCCC/aaa)')
-        # content = await send_interest(app, '/nodeA/func/join/(/nodeA/func/join/(/nodeA/hoge, /nodeA/aa), /nodeA/func/join/(/nodeA/huga, /nodeA/hoxxge))')
+        # content = await send_interest(app, '/producer1/aaaa')
+        # content = await send_interest(app, '/function1/xxaaa/(/producer1/aaa, /producer1/aaa)')
+        content = await send_interest(app, '/function1/func/join/(/function2/func/join/(/producer1/hoge, /producer2/aa), /function4/func/join/(/producer4/huga, /producer4/hoxxge))')
         print(bytes(content) if content else None)
     except InterestNack as e:
         print(f'Nacked with reason={e.reason}')
