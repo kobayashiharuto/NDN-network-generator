@@ -47,29 +47,21 @@ python3 ./example/client_consumer.py
 ```
 
 
-## ndndumpログ
+
+## wireshark によるトレース
+
+ログを保存
 
 ```
-1720069682.979047 IP 172.22.0.3 > 172.22.0.2, TCP, length 98, INTEREST: /ndn/waseda/%C1.Router/router1/nlsr/INFO/%07%20%08%03ndn%08%06waseda%08%08%C1.Router%08%07router2?CanBePrefix&MustBeFresh&Nonce=da7683e9&Lifetime=1000
-1720069682.980428 IP 172.22.0.2 > 172.22.0.3, TCP, length 240, DATA: /ndn/waseda/%C1.Router/router1/nlsr/INFO/%07%20%08%03ndn%08%06waseda%08%08%C1.Router%08%07router2/v=1720069682979
-1720069684.641264 IP 172.22.0.3 > 172.22.0.2, TCP, length 36, INTEREST: /sample.txt/32=metadata?CanBePrefix&MustBeFresh&Nonce=cc25c92f
-1720069684.642755 IP 172.22.0.2 > 172.22.0.3, TCP, length 205, DATA: /sample.txt/32=metadata/v=1720069684642/seg=0
-1720069684.643105 IP 172.22.0.3 > 172.22.0.2, TCP, length 35, INTEREST: /sample.txt/v=1720069638790/seg=1?Nonce=25a51ef5
-1720069684.643569 IP 172.22.0.2 > 172.22.0.3, TCP, length 48, NDNLPv2, NACK (None): /sample.txt/v=1720069638790/seg=1?Nonce=25a51ef5
+tshark  -X lua_script:/workspaces/lua/ndn.lua -V -w /workspaces/lua/log.pcap
 ```
 
-```1
-ndndump: listening on eth0, link-type EN10MB (Ethernet)
-1720069776.013066 IP 172.22.0.3 > 172.22.0.2, TCP, length 36, INTEREST: /sample.txt/32=metadata?CanBePrefix&MustBeFresh&Nonce=70dc1807
-1720069776.015100 IP 172.22.0.2 > 172.22.0.3, TCP, length 203, DATA: /sample.txt/32=metadata/v=1720069776014/seg=0
-1720069776.015906 IP 172.22.0.3 > 172.22.0.2, TCP, length 35, INTEREST: /sample.txt/v=1720069638790/seg=1?Nonce=89eada64
-1720069776.016868 IP 172.22.0.2 > 172.22.0.3, TCP, length 48, NDNLPv2, NACK (None): /sample.txt/v=1720069638790/seg=1?Nonce=89eada64
+ログからテキストへ
+```
+tshark -X lua_script:/workspaces/lua/ndn.lua -r /workspaces/lua/log.pcap -V  > /workspaces/lua/log.txt
 ```
 
-```2
-ndndump: listening on eth0, link-type EN10MB (Ethernet)
-1720069776.013003 IP 172.22.0.3 > 172.22.0.2, TCP, length 36, INTEREST: /sample.txt/32=metadata?CanBePrefix&MustBeFresh&Nonce=70dc1807
-1720069776.015144 IP 172.22.0.2 > 172.22.0.3, TCP, length 203, DATA: /sample.txt/32=metadata/v=1720069776014/seg=0
-1720069776.015893 IP 172.22.0.3 > 172.22.0.2, TCP, length 35, INTEREST: /sample.txt/v=1720069638790/seg=1?Nonce=89eada64
-1720069776.016881 IP 172.22.0.2 > 172.22.0.3, TCP, length 48, NDNLPv2, NACK (None): /sample.txt/v=1720069638790/seg=1?Nonce=89eada64
+GUI で確認
+```
+wireshark -X lua_script:ndn.lua -r log.pcap
 ```

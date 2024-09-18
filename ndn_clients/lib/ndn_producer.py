@@ -28,6 +28,8 @@ class NDNProducer:
 
         @self.app.route(prefix)
         def on_interest(name: FormalName, param: InterestParam, _app_param: Optional[BinaryStr]):
+            # nonce を出力する
+            print(f"NONCE: {param.nonce}")
             print(f'>> I: {Name.to_str(name)}, {param}')
             content = data_request_handler(Name.to_str(name))
             content = content.encode()

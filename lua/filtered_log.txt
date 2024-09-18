@@ -1,0 +1,14 @@
+        ...0 .... .... = Nonce: Not set
+Named Data Networking (NDN), Interest, Name: /test1/aaaa, MustBeFresh: Yes, Nonce: 1599830855, InterestLifetime: 10000
+    Interest, Type: 5, Length: 27, Name: /test1/aaaa, MustBeFresh: Yes, Nonce: 1599830855, InterestLifetime: 10000
+        Nonce: 0x5f5b7b47
+        ...0 .... .... = Nonce: Not set
+        ...0 .... .... = Nonce: Not set
+Named Data Networking (NDN), Interest, Name: /test1/aaaa, MustBeFresh: Yes, Nonce: 1599830855, InterestLifetime: 10000
+    Interest, Type: 5, Length: 27, Name: /test1/aaaa, MustBeFresh: Yes, Nonce: 1599830855, InterestLifetime: 10000
+        Nonce: 0x5f5b7b47
+        ...0 .... .... = Nonce: Not set
+        ...0 .... .... = Nonce: Not set
+        ...0 .... .... = Nonce: Not set
+        ...0 .... .... = Nonce: Not set
+        ...0 .... .... = Nonce: Not set

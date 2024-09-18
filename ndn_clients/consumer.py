@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from ndn.app import NDNApp
 from ndn.types import InterestNack, InterestTimeout, InterestCanceled, ValidationFailure
@@ -14,12 +15,16 @@ logging.basicConfig(format='[{asctime}]{levelname}:{message}',
 
 app = NDNApp()
 
+async def send_interest_with_sleep(app, name, sleep_time, id):
+    await asyncio.sleep(sleep_time)
+    print(f'{id}: {sleep_time}秒の待機が終了しました、send_interestを実行します')
+    content = await send_interest(app, name)
+    print(f'{id}: send_interestが完了しました')
+    return content
 
 async def main():
     try:
-        # content = await send_interest(app, '/producer1/aaaa')
-        # content = await send_interest(app, '/function1/xxaaa/(/producer1/aaa, /producer1/aaa)')
-        content = await send_interest(app, '/function1/func/join/(/function2/func/join/(/producer1/hoge, /producer2/aa), /function4/func/join/(/producer4/huga, /producer4/hoxxge))')
+        content = await send_interest(app, '/function1/xxaaa/(/producer1/aaa, /producer1/aaa)')
         print(bytes(content) if content else None)
     except InterestNack as e:
         print(f'Nacked with reason={e.reason}')

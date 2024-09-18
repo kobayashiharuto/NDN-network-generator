@@ -82,7 +82,7 @@ def main():
 
     # 生成したディレクトリにて、docker compose up --build を実行
     os.chdir(GENERATE_DIR)
-    os.system('docker-compose up --build')
+    os.system('docker compose up --build')
     
 
 if __name__ == '__main__':

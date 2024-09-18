@@ -5,6 +5,21 @@ from jinja2 import Template
 docker_compose_template = Template('''\
 version: "3"
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ndn_logs
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass
+    volumes:
+      - ../config/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - ndn-network
+    ports:
+      - "3306:3306"  # ホストからアクセスする必要がある場合のみ
 {{ services }}
 networks:
   ndn-network:
@@ -18,6 +33,9 @@ service_template = Template('''\
     build:
       context: .
     working_dir: /workspaces
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     networks:
       ndn-network:
     volumes:
