@@ -12,3 +12,4 @@ pycryptodomex==3.20.0
 pygtrie==2.5.0
 python-ndn==0.4.2
 yarl==1.9.4
+mysql-connector-python==9.0.0

@@ -1,5 +1,6 @@
 import os
 import shutil
+import argparse
 
 from utils.read_network_relations_from_csv import read_network_relations_from_csv
 from utils.docker_compose_generator import NodeInfoForDockerCompose, docker_compose_generator
@@ -27,7 +28,7 @@ DOCKER_COMPOSE_PATH = GENERATE_DIR + '/docker-compose.yml'
 NLSR_CONFIG_DIR = GENERATE_DIR + '/nlsr'                          
 
 # ファイルを生成して実行します
-def main():
+def main(no_cache):
     # 生成先のディレクトリを作成、あるいはすでに存在する場合は削除して作り直す
     if os.path.exists(GENERATE_DIR):
         shutil.rmtree(GENERATE_DIR)
@@ -82,8 +83,19 @@ def main():
 
     # 生成したディレクトリにて、docker compose up --build を実行
     os.chdir(GENERATE_DIR)
-    os.system('docker compose up --build')
     
+    # no_cache フラグに基づいてコマンドを作成
+    build_command = 'docker compose build'
+    if no_cache:
+        build_command += ' --no-cache'
+    
+    os.system(f'{build_command} && docker compose up')
 
 if __name__ == '__main__':
-    main()
+    # コマンドライン引数をパース
+    parser = argparse.ArgumentParser(description='Docker Compose Build and Run Script')
+    parser.add_argument('--no-cache', action='store_true', help='Add --no-cache option to docker compose build')
+    args = parser.parse_args()
+
+    # main関数に引数を渡して実行
+    main(no_cache=args.no_cache)

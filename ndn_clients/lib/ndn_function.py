@@ -1,91 +1,246 @@
 import asyncio
 import os
-from typing import Callable, Optional
+import random
+from typing import Callable, Optional, List, Dict, Any
 from ndn.app import NDNApp
 from ndn.encoding import Name, InterestParam, BinaryStr, FormalName
+from ndn.types import InterestNack, InterestTimeout
 import logging
+import datetime
+import mysql.connector
+from mysql.connector import Error
 
 from lib.ndn_utils import extract_first_level_args, extract_my_function_name, is_function_request, send_interest_process
-        
+
 logging.basicConfig(format='[{asctime}]{levelname}:{message}',
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=logging.INFO,
                     style='{')
 
+# データベース接続情報（必要に応じて変更してください）
+DB_CONFIG = {
+    'host': 'mysql',       # データベースのホスト名（Docker コンテナの場合はサービス名を指定）
+    'user': 'user',        # データベースのユーザー名
+    'password': 'pass',    # データベースのパスワード
+    'database': 'ndn_logs' # 使用するデータベース名
+}
+
+class DatabaseManager:
+    """
+    データベースへの接続と操作を管理するクラス。
+    """
+    def __init__(self, config: Dict[str, str]):
+        """
+        コンストラクタ。
+
+        Args:
+            config (Dict[str, str]): データベース接続情報。
+        """
+        self.config = config
+        self.connection = self._create_connection()
+        self._create_tables()
+
+    def _create_connection(self) -> mysql.connector.connection.MySQLConnection:
+        """
+        データベースへの接続を確立する。
+
+        Returns:
+            MySQLConnection: データベース接続オブジェクト。
+
+        Raises:
+            Exception: 接続に失敗した場合。
+        """
+        try:
+            connection = mysql.connector.connect(**self.config)
+            logging.info("MySQL database connection established.")
+            return connection
+        except Error as e:
+            logging.error(f"Error connecting to MySQL: {e}")
+            raise
+
+    def _create_tables(self) -> None:
+        """
+        必要なテーブルが存在しない場合は作成する。
+        """
+        cursor = self.connection.cursor()
+        try:
+            # request_chain テーブルの作成
+            create_request_chain_table = """
+            CREATE TABLE IF NOT EXISTS request_chain (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                parent_nonce VARCHAR(255),
+                child_nonce VARCHAR(255)
+            );
+            """
+            cursor.execute(create_request_chain_table)
+
+            self.connection.commit()
+            logging.info("Table 'request_chain' is ready.")
+        except Error as e:
+            logging.error(f"Error creating tables: {e}")
+            self.connection.rollback()
+        finally:
+            cursor.close()
+
+    def insert_request_chain(self, parent_nonce: str, child_nonce: str) -> None:
+        """
+        RCT（Request Chain Table）にエントリを追加する。
+
+        Args:
+            parent_nonce (str): 親の Nonce。
+            child_nonce (str): 子の Nonce。
+        """
+        insert_query = """
+        INSERT INTO request_chain (parent_nonce, child_nonce)
+        VALUES (%s, %s)
+        """
+        data = (parent_nonce, child_nonce)
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(insert_query, data)
+            self.connection.commit()
+            logging.info(f"RCT entry added: parent_nonce={parent_nonce}, child_nonce={child_nonce}")
+        except Error as e:
+            logging.error(f"Error inserting RCT entry: {e}")
+            self.connection.rollback()
+        finally:
+            cursor.close()
+
+    def close(self) -> None:
+        """
+        データベース接続を閉じる。
+        """
+        if self.connection.is_connected():
+            self.connection.close()
+            logging.info("MySQL database connection closed.")
 
 class NDNFunction:
+    """
+    NDN 関数ノードを表すクラス。
+    """
     def __init__(self):
         self.app = NDNApp()
+        self.db_manager = DatabaseManager(DB_CONFIG)
 
-    def run(self, prefix: str, function_request_handler: Callable[[str, list[bytes]], bytes], data_request_handler: Callable[[str], str]):
+    def run(self, prefix: str, function_request_handler: Callable[[str, List[bytes]], bytes], data_request_handler: Callable[[str], str]):
         """
-        プレフィックスに対して関数ハンドラとデータハンドラを登録して起動
+        プレフィックスに対して関数ハンドラとデータハンドラを登録して起動。
+
         Args:
-            prefix (str): プレフィックス
-            function_handler (Callable[[str, list[bytes]], bytes]): 関数ハンドラ (関数名, 引数) -> 結果
-            data_request_handler (Callable[[str], str]): データハンドラ (名前) -> データ
+            prefix (str): プレフィックス。
+            function_request_handler (Callable[[str, List[bytes]], bytes]): 関数ハンドラ (関数名, 引数) -> 結果。
+            data_request_handler (Callable[[str], str]): データハンドラ (名前) -> データ。
         """
 
-        # nlsrc advertise [prefix] というコマンドで prefix を広告
+        # プレフィックスを広告
         os.system(f"nlsrc advertise {prefix}")
-        
+
         @self.app.route(prefix)
         def on_interest(name: FormalName, param: InterestParam, _app_param: Optional[BinaryStr]):
-            print(f'>> I: {Name.to_str(name)}, {param}')
             async def async_on_interest():
+                nonce = param.nonce
+                if nonce is None:
+                    # Nonce がない場合は新しく生成
+                    nonce = random.randint(0, 2**32 - 1)
+                nonce_str = str(nonce)
+                name_str = Name.to_str(name)
+                logging.info(f'>> I: {name_str}, Nonce: {nonce_str}')
+
                 # function リクエストでない場合は、データリクエストとして処理
                 if not is_function_request(name):
-                    content = data_request_handler(Name.to_str(name))
-                    content = content.encode()
-                    self.app.put_data(name, content=content, freshness_period=10000)
+                    content = data_request_handler(name_str)
+                    content_bytes = content.encode()
+
+                    self.app.put_data(name, content=content_bytes, freshness_period=10000)
                     return
 
                 # function リクエストの場合は、まず第一階層の引数を抽出
                 args = extract_first_level_args(name)
 
-                # それぞれを interest で並列でリクエストし、データを集める
-                async def fetch_content(arg):
-                    return await send_interest_process(arg)
-                tasks = [fetch_content(arg) for arg in args]
+                # 親の Nonce（受信した Interest の Nonce）
+                parent_nonce = nonce_str
+
+                # それぞれを Interest で並列でリクエストし、データを集める
+                async def fetch_content(arg, parent_nonce):
+                    # 子の Nonce を生成
+                    child_nonce = random.randint(0, 2**32 - 1)
+                    child_nonce_str = str(child_nonce)
+
+                    # RCT に親子の Nonce を記録
+                    self.db_manager.insert_request_chain(parent_nonce, child_nonce_str)
+
+                    # Interest を送信
+                    try:
+                        return await send_interest_process(arg, child_nonce_str)
+                    except InterestNack as e:
+                        logging.info(f'Nacked with reason={e.reason}')
+                        return None
+                    except InterestTimeout:
+                        logging.info(f'Timeout for interest {arg}')
+                        return None
+
+                tasks = [fetch_content(arg, parent_nonce) for arg in args]
                 contents = await asyncio.gather(*tasks)
 
-                print(f"データが集まりました: {contents}")
+                logging.info(f"Data collected: {contents}")
 
-                # 自身の関数名を取得 
+                # 関数名を取得
                 my_function_name = extract_my_function_name(name)
 
-                print(f"Function名: {my_function_name}")
+                logging.info(f"Function name: {my_function_name}")
 
                 # 関数を実行
                 result = function_request_handler(my_function_name, contents)
 
-                print(f"実行結果: {result}")
+                logging.info(f"Processing result: {result}")
 
                 # 結果を返す
                 self.app.put_data(name, content=result, freshness_period=10000)
 
-            # 現在のイベントループを取得
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # イベントループがすでに走っている場合はタスクとしてスケジュール
-                loop.create_task(async_on_interest())
-            else:
-                # イベントループが走っていない場合はrunで実行
-                loop.run_until_complete(async_on_interest())
-
+            # イベントループで実行
+            asyncio.create_task(async_on_interest())
         self.app.run_forever()
 
+    def shutdown(self):
+        """
+        アプリケーションとデータベース接続を閉じる。
+        """
+        self.app.shutdown()
+        self.db_manager.close()
 
-def function_request_handler(name: str, args: list[bytes]) -> bytes:
-    args = [arg.decode() for arg in args]
-    args = ",".join(args)
-    return f"Hello, {name}! Args: {args}".encode()
+def function_request_handler(name: str, args: List[bytes]) -> bytes:
+    """
+    関数リクエストを処理するハンドラ。
+
+    Args:
+        name (str): 関数名。
+        args (List[bytes]): 引数のリスト。
+
+    Returns:
+        bytes: 関数の実行結果。
+    """
+    args_decoded = [arg.decode() for arg in args if arg is not None]
+    args_str = ",".join(args_decoded)
+    return f"Hello, {name}! Args: {args_str}".encode()
 
 def data_request_handler(name: str) -> str:
-    print(f"Interest: {name}")
-    return "Hello, world!!!!!!"
+    """
+    データリクエストを処理するハンドラ。
+
+    Args:
+        name (str): データ名。
+
+    Returns:
+        str: データの内容。
+    """
+    logging.info(f"Data requested for: {name}")
+    return "Hello, world!"
 
 if __name__ == '__main__':
-    producer = NDNFunction()
-    producer.run('/func_nodeX', function_request_handler, data_request_handler)
-    
+    try:
+        producer = NDNFunction()
+        producer.run('/func_nodeX', function_request_handler, data_request_handler)
+    except KeyboardInterrupt:
+        logging.info("Application interrupted by user.")
+    finally:
+        producer.shutdown()

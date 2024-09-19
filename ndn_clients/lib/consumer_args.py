@@ -7,9 +7,9 @@ from ndn_utils import send_interest
 app = NDNApp()
 
 
-async def main(name):
+async def main(name, nonce):
     try:
-        content = await send_interest(app, name)
+        content = await send_interest(app, name, nonce)
         print(content.decode('utf-8') if content else None)
     except InterestNack as e:
         print(f'Nacked with reason={e.reason}')
@@ -26,5 +26,7 @@ async def main(name):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("name", help="Name of the interest")
+    parser.add_argument("nonce", help="Nonce of the interest")
+    print(parser.parse_args())
     args = parser.parse_args()
-    app.run_forever(after_start=main(args.name))
+    app.run_forever(after_start=main(args.name, args.nonce))

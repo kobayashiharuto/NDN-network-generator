@@ -3,9 +3,11 @@
 # ベースイメージの指定
 FROM hydrokhoos/ndn-all:arm
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 # パッケージの追加
 RUN apt update
-RUN apt install -y tcpdump dnsutils iputils-ping net-tools netcat psmisc tmux
+RUN apt install -y tcpdump dnsutils iputils-ping net-tools netcat psmisc tmux tshark
 
 # 新しいユーザーを作成
 RUN useradd -ms /bin/bash myuser
@@ -16,11 +18,5 @@ WORKDIR /workspaces
 # 必要なパッケージをコピー
 COPY requirements.txt /workspaces/
 
-# ユーザーを変更
-USER myuser
-
 # 必要なパッケージをインストール
-RUN pip install --user --upgrade pip && pip install --user -r requirements.txt
-
-# ルートユーザーに戻す
-USER root
+RUN pip install --upgrade pip && pip install -r requirements.txt

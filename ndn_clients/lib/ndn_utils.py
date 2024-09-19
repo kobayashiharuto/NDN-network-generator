@@ -69,11 +69,15 @@ def extract_first_level_args(name: FormalName) -> list[str]:
     return args
 
 # interestを送る
-async def send_interest(app: NDNApp, name: str) -> Optional[bytes]:
+async def send_interest(app: NDNApp, name: str, nonce: Optional[str] = None) -> Optional[bytes]:
     try:
         name = Name.from_str(name)
+        if nonce:
+            nonce = int(nonce)
+        else:
+            nonce = None
         data_name, _meta_info, content = await app.express_interest(
-            name, must_be_fresh=True, can_be_prefix=False, lifetime=10000)
+            name, must_be_fresh=True, can_be_prefix=False, lifetime=10000, nonce=nonce)
 
         return bytes(content) if content else None
     except InterestNack as e:
@@ -86,11 +90,11 @@ async def send_interest(app: NDNApp, name: str) -> Optional[bytes]:
         print(f'!!!ERROR!!!: Data failed to validate')
 
 # 別プロセスから無理やりInterestを送信
-async def send_interest_process(name: str) -> Optional[bytes]:
+async def send_interest_process(name: str, nonce: str) -> Optional[bytes]:
     try:
         # 非同期プロセスを起動してInterestを送信
         process = await asyncio.create_subprocess_exec(
-            'python3', './ndn_clients/lib/consumer_args.py', name,
+            'python3', './ndn_clients/lib/consumer_args.py', name, nonce,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )

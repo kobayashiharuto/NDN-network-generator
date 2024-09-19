@@ -22,11 +22,13 @@ DB_CONFIG = {
 # tshark コマンド（必要に応じてオプションを調整してください）
 TSHARK_CMD = [
     "tshark",
+    "-i",
+    "any",
+    "-l",
+    "-q",
     "-X",
     "lua_script:/workspaces/lua/ndn.lua",
-    "-V",
-    "-w",
-    "/workspaces/lua/logX.pcap"
+    "-V"
 ]
 
 # 正規表現パターンを定義（パケット情報を抽出するため）
@@ -36,6 +38,7 @@ name_pattern = re.compile(r'Name: (/.+?)(?:,|\s|$)')
 nonce_pattern = re.compile(r'Nonce: (\d+)')
 interest_lifetime_pattern = re.compile(r'InterestLifetime: (\d+)')
 packet_type_pattern = re.compile(r'Named Data Networking \(NDN\), (Interest|Data)')
+arrival_time_pattern = re.compile(r'Arrival Time: (.+)')
 
 # 無視するルーターの名前一覧
 ROUTER_NAMES = ["/ndn/waseda/%C1.Router"]
@@ -45,8 +48,8 @@ class DatabaseManager:
     データベースへの接続と操作を管理するクラス。
     """
     INSERT_PACKET_LOG_QUERY = """
-    INSERT INTO packet_logs (request_id, name, packet_type, source_ip, destination_ip, received_time)
-    VALUES (%s, %s, %s, %s, %s, %s)
+    INSERT INTO packet_logs (request_id, name, packet_type, source_ip, destination_ip, node_ip, received_time)
+    VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
 
     def __init__(self, config: Dict[str, str]):
@@ -90,7 +93,8 @@ class DatabaseManager:
             packet_type INT,
             source_ip VARCHAR(45),
             destination_ip VARCHAR(45),
-            received_time DATETIME
+            node_ip VARCHAR(45),
+            received_time DATETIME(6)
         );
         """
         cursor = self.connection.cursor()
@@ -134,7 +138,7 @@ class Packet(ABC):
     """
     パケットの抽象基底クラス。
     """
-    def __init__(self, source_ip: str, destination_ip: str, name: str):
+    def __init__(self, source_ip: str, destination_ip: str, name: str, received_time: Optional[datetime.datetime] = None):
         """
         コンストラクタ。
 
@@ -142,11 +146,12 @@ class Packet(ABC):
             source_ip (str): 送信元IPアドレス。
             destination_ip (str): 送信先IPアドレス。
             name (str): パケットのNameフィールド。
+            received_time (datetime.datetime, optional): パケットの受信時刻。
         """
         self.source_ip = source_ip
         self.destination_ip = destination_ip
         self.name = name
-        self.received_time = datetime.datetime.now()
+        self.received_time = received_time or datetime.datetime.now()
 
     @abstractmethod
     def process(self) -> None:
@@ -159,7 +164,7 @@ class InterestPacket(Packet):
     """
     Interestパケットを表すクラス。
     """
-    def __init__(self, source_ip: str, destination_ip: str, name: str, nonce: str):
+    def __init__(self, source_ip: str, destination_ip: str, name: str, nonce: str, received_time: Optional[datetime.datetime] = None):
         """
         コンストラクタ。
 
@@ -168,8 +173,9 @@ class InterestPacket(Packet):
             destination_ip (str): 送信先IPアドレス。
             name (str): パケットのNameフィールド。
             nonce (str): パケットのNonceフィールド。
+            received_time (datetime.datetime, optional): パケットの受信時刻。
         """
-        super().__init__(source_ip, destination_ip, name)
+        super().__init__(source_ip, destination_ip, name, received_time=received_time)
         self.nonce = nonce
 
     def process(self) -> None:
@@ -182,7 +188,7 @@ class DataPacket(Packet):
     """
     Dataパケットを表すクラス。
     """
-    def __init__(self, source_ip: str, destination_ip: str, name: str):
+    def __init__(self, source_ip: str, destination_ip: str, name: str, received_time: Optional[datetime.datetime] = None):
         """
         コンストラクタ。
 
@@ -190,8 +196,9 @@ class DataPacket(Packet):
             source_ip (str): 送信元IPアドレス。
             destination_ip (str): 送信先IPアドレス。
             name (str): パケットのNameフィールド。
+            received_time (datetime.datetime, optional): パケットの受信時刻。
         """
-        super().__init__(source_ip, destination_ip, name)
+        super().__init__(source_ip, destination_ip, name, received_time=received_time)
 
     def process(self) -> None:
         """
@@ -234,7 +241,7 @@ class PacketLogData(LogData):
     """
     パケットのログデータクラス。
     """
-    def __init__(self, packet: Packet, packet_type: PacketType, request_id: str):
+    def __init__(self, packet: Packet, packet_type: PacketType, request_id: str, node_ip: str):
         """
         コンストラクタ。
 
@@ -242,6 +249,7 @@ class PacketLogData(LogData):
             packet (Packet): ログ化するパケット。
             packet_type (PacketType): パケットの種類。
             request_id (str): パケットのリクエストID（Nonce）。
+            node_ip (str): 自身のIPアドレス。
         """
         self.request_id: str = request_id
         self.name: str = packet.name
@@ -249,6 +257,7 @@ class PacketLogData(LogData):
         self.source_ip: str = packet.source_ip
         self.destination_ip: str = packet.destination_ip
         self.received_time: datetime.datetime = packet.received_time
+        self.node_ip: str = node_ip
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -263,7 +272,8 @@ class PacketLogData(LogData):
             'packet_type': self.packet_type.value,
             'source_ip': self.source_ip,
             'destination_ip': self.destination_ip,
-            'received_time': self.received_time
+            'node_ip': self.node_ip,
+            'received_time': self.received_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         }
 
     def to_tuple(self) -> tuple:
@@ -279,25 +289,9 @@ class PacketLogData(LogData):
             self.packet_type.value,
             self.source_ip,
             self.destination_ip,
+            self.node_ip,
             self.received_time
         )
-
-class PendingInterestPacketInfo:
-    """
-    対応するInterestパケットの情報を保持するクラス。
-    """
-    def __init__(self, incoming_packet: InterestPacket, outgoing_packet: InterestPacket):
-        """
-        コンストラクタ。
-
-        Args:
-            incoming_packet (InterestPacket): 受信したInterestパケット。
-            outgoing_packet (InterestPacket): 送信したInterestパケット。
-        """
-        self.destination_ip: str = outgoing_packet.destination_ip
-        self.source_ip: str = incoming_packet.source_ip
-        self.name: str = outgoing_packet.name
-        self.nonce: str = outgoing_packet.nonce
 
 class LogAgent:
     """
@@ -311,49 +305,91 @@ class LogAgent:
             db_manager (DatabaseManager): データベースマネージャーのインスタンス。
         """
         self.db_manager = db_manager
-        self.pending_interest_packets: Dict[str, InterestPacket] = {}
-        self.pending_interest_info: Dict[str, PendingInterestPacketInfo] = {}
+        self.incoming_pitl: Dict[str, InterestPacket] = {}
+        self.outgoing_pitl: Dict[str, InterestPacket] = {}
+        self.my_ip = self._get_my_ip()
+
+    def _get_my_ip(self) -> str:
+        """
+        自身のIPアドレスを取得する。
+
+        Returns:
+            str: 自身のIPアドレス。
+        """
+        # 自身のIPアドレスを取得
+        my_ip = subprocess.run(["hostname", "-I"], stdout=subprocess.PIPE, text=True).stdout.strip()
+        my_ip = my_ip.split()[0]  # 複数のIPが返される場合、最初のものを使用
+        logging.info(f"My IP address: {my_ip}")
+        return my_ip
 
     def log_interest(self, packet: InterestPacket) -> None:
         """
         Interestパケットのログ処理を行う。
+        自身のIPを参照し、Incoming の時と Outgoing の時で分ける。
 
         Args:
             packet (InterestPacket): 処理するInterestパケット。
         """
-        if packet.nonce in self.pending_interest_packets:
-            # 対になるInterestパケットが見つかった場合
-            incoming_packet = self.pending_interest_packets.pop(packet.nonce)
-            self.pending_interest_info[packet.nonce] = PendingInterestPacketInfo(incoming_packet, packet)
-            # パケットログをデータベースに挿入
-            log_data = PacketLogData(packet, PacketType.INTEREST, packet.nonce)
-            self.db_manager.insert_log(log_data)
+        # 自身のIPを参照して方向を判定
+        if packet.source_ip == self.my_ip:
+            # 自身が送信した Interest（Outgoing）
+            self.outgoing_pitl[packet.nonce] = packet
+        elif packet.destination_ip == self.my_ip:
+            # 自身が受信した Interest（Incoming）
+            self.incoming_pitl[packet.nonce] = packet
         else:
-            # パケットを待機リストに追加
-            self.pending_interest_packets[packet.nonce] = packet
+            # 関係のないパケット
+            return
 
-    def log_data(self, packet: DataPacket) -> None:
+        # パケットログをデータベースに挿入
+        log_data = PacketLogData(packet, PacketType.INTEREST, packet.nonce, self.my_ip)
+        self.db_manager.insert_log(log_data)
+
+    def log_data(self, data_packet: DataPacket) -> None:
         """
         Dataパケットのログ処理を行う。
 
         Args:
-            packet (DataPacket): 処理するDataパケット。
+            data_packet (DataPacket): 処理するDataパケット。
         """
-        # 対応するInterestパケット情報を検索
-        for nonce, info in list(self.pending_interest_info.items()):
-            if info.destination_ip == packet.source_ip and info.name == packet.name:
-                # パケットログをデータベースに挿入
-                log_data = PacketLogData(packet, PacketType.DATA, nonce)
-                self.db_manager.insert_log(log_data)
-                # 対応済みの情報を削除
-                del self.pending_interest_info[nonce]
-                break
+        # Data が Incoming の場合
+        if data_packet.destination_ip == self.my_ip:
+            # 対応する Outgoing Interest を検索
+            for nonce, interest_packet in list(self.outgoing_pitl.items()):
+                if (interest_packet.destination_ip == data_packet.source_ip and
+                    interest_packet.name == data_packet.name):
+                    # マッチング成功
+                    log_data = PacketLogData(data_packet, PacketType.DATA, interest_packet.nonce, self.my_ip)
+                    self.db_manager.insert_log(log_data)
+                    # 対応した Interest を削除
+                    del self.outgoing_pitl[nonce]
+                    break
+            else:
+                logging.warning(f"No matching Outgoing Interest found for Incoming Data packet: {data_packet.name}")
+        # Data が Outgoing の場合
+        elif data_packet.source_ip == self.my_ip:
+            # 対応する Incoming Interest を検索
+            for nonce, interest_packet in list(self.incoming_pitl.items()):
+                if (interest_packet.source_ip == data_packet.destination_ip and
+                    interest_packet.name == data_packet.name):
+                    # マッチング成功
+                    log_data = PacketLogData(data_packet, PacketType.DATA, interest_packet.nonce, self.my_ip)
+                    self.db_manager.insert_log(log_data)
+                    # 対応した Interest を削除
+                    del self.incoming_pitl[nonce]
+                    break
+            else:
+                logging.warning(f"No matching Incoming Interest found for Outgoing Data packet: {data_packet.name}")
+        else:
+            # 自ノードに関係ないパケット
+            pass
 
     def close(self) -> None:
         """
         データベース接続を閉じる。
         """
         self.db_manager.close()
+
 
 def main() -> None:
     """
@@ -371,12 +407,44 @@ def main() -> None:
             name: Optional[str] = None
             nonce: Optional[str] = None
             packet_type: Optional[str] = None
+            arrival_time: Optional[datetime.datetime] = None
 
             for line in proc.stdout:
                 # パケットタイプを検出
                 packet_type_match = packet_type_pattern.search(line)
                 if packet_type_match:
                     packet_type = packet_type_match.group(1)
+
+                # Arrival Time を検出
+                arrival_time_match = arrival_time_pattern.search(line)
+                if arrival_time_match:
+                    arrival_time_str = arrival_time_match.group(1).strip()
+                    # タイムゾーンを削除（必要に応じて調整）
+                    if 'JST' in arrival_time_str:
+                        arrival_time_str = arrival_time_str.replace('JST', '').strip()
+                        tzinfo = datetime.timezone(datetime.timedelta(hours=9))  # JSTタイムゾーン
+                    else:
+                        tzinfo = None
+                    # ナノ秒をマイクロ秒に変換
+                    time_parts = arrival_time_str.split('.')
+                    if len(time_parts) == 2:
+                        time_without_frac = time_parts[0]
+                        frac_seconds = time_parts[1][:6]  # 最初の6桁をマイクロ秒として使用
+                        arrival_time_str = f"{time_without_frac}.{frac_seconds}"
+                    else:
+                        # フラクショナルセカンドがない場合
+                        pass
+                    try:
+                        arrival_time = datetime.datetime.strptime(arrival_time_str, '%b %d, %Y %H:%M:%S.%f')
+                        if tzinfo:
+                            arrival_time = arrival_time.replace(tzinfo=tzinfo)
+                        else:
+                            arrival_time = arrival_time.replace(tzinfo=datetime.timezone.utc)
+                        # UTCに変換
+                        arrival_time = arrival_time.astimezone(datetime.timezone.utc)
+                    except ValueError as e:
+                        logging.error(f"Error parsing arrival time: {e}")
+                        arrival_time = None
 
                 # 送信元IPを検出
                 source_ip_match = source_ip_pattern.search(line)
@@ -400,38 +468,38 @@ def main() -> None:
                         nonce = nonce_match.group(1)
 
                 # Interestパケットの完全な情報が揃った場合
-                if packet_type == "Interest" and all([source_ip, destination_ip, name, nonce]):
+                if packet_type == "Interest" and all([source_ip, destination_ip, name, nonce, arrival_time]):
                     # 無視するパケットをフィルタリング
-                    if "/localhop/ndn/nlsr/sync" in name or "/localhost" in name:
+                    if "localhop" in name or "localhost" in name:
                         continue
 
                     if any(router_name in name for router_name in ROUTER_NAMES):
                         continue
 
                     # Interestパケットを処理
-                    packet = InterestPacket(source_ip, destination_ip, name, nonce)
+                    packet = InterestPacket(source_ip, destination_ip, name, nonce, received_time=arrival_time)
                     packet.process()
                     log_agent.log_interest(packet)
 
                     # 変数をリセット
-                    packet_type = source_ip = destination_ip = name = nonce = None
+                    packet_type = source_ip = destination_ip = name = nonce = arrival_time = None
 
                 # Dataパケットの完全な情報が揃った場合
-                elif packet_type == "Data" and all([source_ip, destination_ip, name]):
+                elif packet_type == "Data" and all([source_ip, destination_ip, name, arrival_time]):
                     # 無視するパケットをフィルタリング
-                    if "/localhop/ndn/nlsr/sync" in name or "/localhost" in name:
+                    if "localhop" in name or "localhost" in name:
                         continue
 
                     if any(router_name in name for router_name in ROUTER_NAMES):
                         continue
 
                     # Dataパケットを処理
-                    packet = DataPacket(source_ip, destination_ip, name)
+                    packet = DataPacket(source_ip, destination_ip, name, received_time=arrival_time)
                     packet.process()
                     log_agent.log_data(packet)
 
                     # 変数をリセット
-                    packet_type = source_ip = destination_ip = name = None
+                    packet_type = source_ip = destination_ip = name = arrival_time = None
 
     except KeyboardInterrupt:
         logging.info("Interrupted by user.")
