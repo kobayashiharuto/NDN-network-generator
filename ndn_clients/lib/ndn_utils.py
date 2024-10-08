@@ -3,7 +3,7 @@ import asyncio
 from typing import Optional
 import urllib.parse
 from ndn.encoding import Name, FormalName, MetaInfo, BinaryStr
-from ndn.app_support.segment_fetcher import segment_fetcher
+from ndn.app_support.segment_fetcher import segment_fetcher, NonStrictName
 from ndn.app import NDNApp
 from ndn.types import InterestNack, InterestTimeout, InterestCanceled, ValidationFailure
 from ndn.encoding import Name, Component
@@ -80,12 +80,53 @@ def extract_first_level_args(name: FormalName) -> list[str]:
     args.append(trim(args_str[start:]))
     return args
 
+
+async def segment_fetcher_original(app: NDNApp, name: NonStrictName, first_nonce: Optional[str] = None, timeout=4000, retry_times=3,
+                          validator=None, must_be_fresh=True):
+    async def retry(first, nonce=None):
+        nonlocal name
+        trial_times = 0
+        while True:
+            future = app.express_interest(name, validator=validator, can_be_prefix=first,
+                                          must_be_fresh=must_be_fresh, lifetime=timeout, nonce=int(nonce) if nonce else None)
+            try:
+                return await future
+            except InterestTimeout:
+                trial_times += 1
+                if trial_times >= retry_times:
+                    raise
+
+    name = Name.normalize(name)
+    # First Interest
+    name, meta, content = await retry(True, first_nonce)
+    # If it's not segmented
+    if Component.get_type(name[-1]) != Component.TYPE_SEGMENT:
+        yield content
+        return
+    # If it's segmented
+    if Component.to_number(name[-1]) == 0:
+        yield content
+        if meta.final_block_id == name[-1]:
+            return
+        seg_no = 1
+    else:
+        # If it's not segment 0, starting from 0
+        seg_no = 0
+    # Following Interests
+    while True:
+        name[-1] = Component.from_segment(seg_no)
+        name, meta, content = await retry(False)
+        yield content
+        if meta.final_block_id == name[-1]:
+            return
+        seg_no += 1
+
 # interestを送る
 async def get_data(app: NDNApp, name: str, nonce: Optional[str] = None) -> Optional[bytes]:
     result = b''
 
     try:
-        async for seg in segment_fetcher(app, name):
+        async for seg in segment_fetcher_original(app, name, first_nonce=nonce, timeout=20000):
             data = bytes(seg)
             result += data
     except InterestNack as e:
