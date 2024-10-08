@@ -10,7 +10,7 @@ import datetime
 import mysql.connector
 from mysql.connector import Error
 
-from lib.ndn_utils import extract_first_level_args, extract_my_function_name, is_function_request, send_interest_on_process
+from lib.ndn_utils import extract_first_level_args, extract_my_function_name, is_function_request, get_data_on_process
 
 logging.basicConfig(format='[{asctime}]{levelname}:{message}',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -171,7 +171,7 @@ class NDNFunction:
 
                     # Interest を送信
                     try:
-                        return await send_interest_on_process(arg, child_nonce_str)
+                        return await get_data_on_process(arg, child_nonce_str)
                     except InterestNack as e:
                         logging.info(f'Nacked with reason={e.reason}')
                         return None
