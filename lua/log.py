@@ -5,8 +5,17 @@ import mysql.connector
 from mysql.connector import Error
 from abc import ABC, abstractmethod
 from enum import Enum
+from ndn.encoding import Name, Component, FormalName
 import logging
 from typing import Optional, Dict, Any
+
+def get_original_name(name: FormalName) -> FormalName:
+    original_name = ""
+    if Component.get_type(name[-1]) == Component.TYPE_SEGMENT:
+        original_name = Name.normalize(name[:-1])
+    else:
+        original_name = Name.normalize(name)
+    return original_name
 
 # ロギングの設定
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
@@ -39,6 +48,7 @@ nonce_pattern = re.compile(r'Nonce: (\d+)')
 interest_lifetime_pattern = re.compile(r'InterestLifetime: (\d+)')
 packet_type_pattern = re.compile(r'Named Data Networking \(NDN\), (Interest|Data)')
 arrival_time_pattern = re.compile(r'Arrival Time: (.+)')
+final_block_id_pattern = re.compile(r'FinalBlockId:\s*50=%([^,\s]+)')
 
 # 無視するルーターの名前一覧
 ROUTER_NAMES = ["/ndn/waseda/%C1.Router"]
@@ -188,7 +198,7 @@ class DataPacket(Packet):
     """
     Dataパケットを表すクラス。
     """
-    def __init__(self, source_ip: str, destination_ip: str, name: str, received_time: Optional[datetime.datetime] = None):
+    def __init__(self, source_ip: str, destination_ip: str, name: str, final_block_id: Optional[str] = None, received_time: Optional[datetime.datetime] = None):
         """
         コンストラクタ。
 
@@ -196,9 +206,11 @@ class DataPacket(Packet):
             source_ip (str): 送信元IPアドレス。
             destination_ip (str): 送信先IPアドレス。
             name (str): パケットのNameフィールド。
+            final_block_id (str, optional): パケットのFinalBlockIdフィールド。
             received_time (datetime.datetime, optional): パケットの受信時刻。
         """
         super().__init__(source_ip, destination_ip, name, received_time=received_time)
+        self.final_block_id = final_block_id
 
     def process(self) -> None:
         """
@@ -266,15 +278,16 @@ class PacketLogData(LogData):
         Returns:
             Dict[str, Any]: ログデータの辞書。
         """
-        return {
+        data = {
             'request_id': self.request_id,
             'name': self.name,
             'packet_type': self.packet_type.value,
             'source_ip': self.source_ip,
             'destination_ip': self.destination_ip,
             'node_ip': self.node_ip,
-            'received_time': self.received_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            'received_time': self.received_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
         }
+        return data
 
     def to_tuple(self) -> tuple:
         """
@@ -290,7 +303,7 @@ class PacketLogData(LogData):
             self.source_ip,
             self.destination_ip,
             self.node_ip,
-            self.received_time
+            self.received_time,
         )
 
 class LogAgent:
@@ -408,6 +421,7 @@ def main() -> None:
             nonce: Optional[str] = None
             packet_type: Optional[str] = None
             arrival_time: Optional[datetime.datetime] = None
+            final_block_id: Optional[str] = None
 
             for line in proc.stdout:
                 # パケットタイプを検出
@@ -461,13 +475,18 @@ def main() -> None:
                 if name_match:
                     name = name_match.group(1)
 
+                # FinalBlockIdを検出
+                final_block_id_match = final_block_id_pattern.search(line)
+                if final_block_id_match:
+                    final_block_id = final_block_id_match.group(1)
+
                 # Interestパケットの場合、Nonceを検出
                 if packet_type == "Interest":
                     nonce_match = nonce_pattern.search(line)
                     if nonce_match:
                         nonce = nonce_match.group(1)
 
-                # Interestパケットの完全な情報が揃った場合
+                # Interestパケットのログを保存する
                 if packet_type == "Interest" and all([source_ip, destination_ip, name, nonce, arrival_time]):
                     # 無視するパケットをフィルタリング
                     if "localhop" in name or "localhost" in name:
@@ -476,16 +495,23 @@ def main() -> None:
                     if any(router_name in name for router_name in ROUTER_NAMES):
                         continue
 
-                    # Interestパケットを処理
-                    packet = InterestPacket(source_ip, destination_ip, name, nonce, received_time=arrival_time)
+                    # Name構造に変換し、セグメントが含まれる場合は処理をスキップ
+                    name_structure = Name.from_str(name)
+                    if Component.get_type(name_structure[-1]) == Component.TYPE_SEGMENT:
+                        continue
+
+                    original_name = Name.to_str(get_original_name(name_structure))
+
+                    # セグメントが無い(つまり最初のパケットの)Interestパケットを処理
+                    packet = InterestPacket(source_ip, destination_ip, original_name, nonce, received_time=arrival_time)
                     packet.process()
                     log_agent.log_interest(packet)
 
                     # 変数をリセット
                     packet_type = source_ip = destination_ip = name = nonce = arrival_time = None
 
-                # Dataパケットの完全な情報が揃った場合
-                elif packet_type == "Data" and all([source_ip, destination_ip, name, arrival_time]):
+                # Dataパケットのログを保存する
+                elif packet_type == "Data" and all([source_ip, destination_ip, name, arrival_time, final_block_id]):
                     # 無視するパケットをフィルタリング
                     if "localhop" in name or "localhost" in name:
                         continue
@@ -493,13 +519,23 @@ def main() -> None:
                     if any(router_name in name for router_name in ROUTER_NAMES):
                         continue
 
+                    # Name構造に変換し、セグメントを解析し、final_block_id が一致していなければ飛ばす
+                    name_structure = Name.from_str(name)
+
+                    original_name = Name.to_str(get_original_name(name_structure))
+
+                    if Component.get_type(name_structure[-1]) != Component.TYPE_SEGMENT:
+                        continue
+                    if Component.to_number(name_structure[-1]) != int(final_block_id):
+                        continue
+
                     # Dataパケットを処理
-                    packet = DataPacket(source_ip, destination_ip, name, received_time=arrival_time)
+                    packet = DataPacket(source_ip, destination_ip, original_name, final_block_id=final_block_id, received_time=arrival_time)
                     packet.process()
                     log_agent.log_data(packet)
 
                     # 変数をリセット
-                    packet_type = source_ip = destination_ip = name = arrival_time = None
+                    packet_type = source_ip = destination_ip = name = arrival_time = final_block_id = None
 
     except KeyboardInterrupt:
         logging.info("Interrupted by user.")
