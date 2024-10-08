@@ -3,14 +3,14 @@ import os
 import random
 from typing import Callable, Optional, List, Dict, Any
 from ndn.app import NDNApp
-from ndn.encoding import Name, InterestParam, BinaryStr, FormalName
+from ndn.encoding import Name, InterestParam, BinaryStr, FormalName, Component
 from ndn.types import InterestNack, InterestTimeout
 import logging
 import datetime
 import mysql.connector
 from mysql.connector import Error
 
-from lib.ndn_utils import extract_first_level_args, extract_my_function_name, is_function_request, get_data_on_process
+from lib.ndn_utils import SEGMENT_SIZE, extract_first_level_args, extract_my_function_name, get_original_name, is_function_request, get_data_on_process
 
 logging.basicConfig(format='[{asctime}]{levelname}:{message}',
                     datefmt='%Y-%m-%d %H:%M:%S',
@@ -121,6 +121,8 @@ class NDNFunction:
     def __init__(self):
         self.app = NDNApp()
         self.db_manager = DatabaseManager(DB_CONFIG)
+        self.segmented_data = {}
+
 
     def run(self, prefix: str, function_request_handler: Callable[[str, List[bytes]], bytes], data_request_handler: Callable[[str], str]):
         """
@@ -144,58 +146,106 @@ class NDNFunction:
                     nonce = random.randint(0, 2**32 - 1)
                 nonce_str = str(nonce)
                 name_str = Name.to_str(name)
-                logging.info(f'>> I: {name_str}, Nonce: {nonce_str}')
+                
+                original_name = get_original_name(name)
 
                 # function リクエストでない場合は、データリクエストとして処理
-                if not is_function_request(name):
+                if not is_function_request(original_name):
                     content = data_request_handler(name_str)
-                    content_bytes = content.encode()
+                    content = content.encode()
 
-                    self.app.put_data(name, content=content_bytes, freshness_period=10000)
+                    # セグメント前のリクエストであれば、データを取得してセグメントに分割して保存しておく
+                    if Component.get_type(name[-1]) != Component.TYPE_SEGMENT:
+                        # データを取得
+                        content = data_request_handler(Name.to_str(name))
+                        content = content.encode()
+
+                        # データをセグメントに分割する
+                        seg_cnt = (len(content) + SEGMENT_SIZE - 1) // SEGMENT_SIZE
+
+                        # パケット分割の時間を計測
+                        packets = [self.app.prepare_data(original_name + [Component.from_segment(i)],
+                                                    content[i*SEGMENT_SIZE:(i+1)*SEGMENT_SIZE],
+                                                    freshness_period=10000,
+                                                    final_block_id=Component.from_segment(seg_cnt - 1))
+                                for i in range(seg_cnt)]
+                        
+                        # セグメントデータを保存
+                        self.segmented_data[Name.to_str(original_name)] = packets
+                        seg_no = 0
+                    else:
+                        seg_no = Component.to_number(name[-1])
+
+                    print(f'<< D: {Name.to_str(name)}')
+
+                    # セグメントデータを送信
+                    self.app.put_raw_packet(self.segmented_data[Name.to_str(original_name)][seg_no])
                     return
+                
+                # function リクエストの場合
+                # 処理前(セグメント分割前)のリクエストであれば、データを処理してセグメントに分割して保存しておく
+                if Component.get_type(name[-1]) != Component.TYPE_SEGMENT:
+                    # function リクエストの場合は、まず第一階層の引数を抽出
+                    args = extract_first_level_args(name)
 
-                # function リクエストの場合は、まず第一階層の引数を抽出
-                args = extract_first_level_args(name)
+                    # 親の Nonce（受信した Interest の Nonce）
+                    parent_nonce = nonce_str
 
-                # 親の Nonce（受信した Interest の Nonce）
-                parent_nonce = nonce_str
+                    # それぞれを Interest で並列でリクエストし、データを集める
+                    async def fetch_content(arg, parent_nonce):
+                        # 子の Nonce を生成
+                        child_nonce = random.randint(0, 2**32 - 1)
+                        child_nonce_str = str(child_nonce)
 
-                # それぞれを Interest で並列でリクエストし、データを集める
-                async def fetch_content(arg, parent_nonce):
-                    # 子の Nonce を生成
-                    child_nonce = random.randint(0, 2**32 - 1)
-                    child_nonce_str = str(child_nonce)
+                        # RCT に親子の Nonce を記録
+                        self.db_manager.insert_request_chain(parent_nonce, child_nonce_str)
 
-                    # RCT に親子の Nonce を記録
-                    self.db_manager.insert_request_chain(parent_nonce, child_nonce_str)
+                        # Interest を送信
+                        try:
+                            return await get_data_on_process(arg, child_nonce_str)
+                        except InterestNack as e:
+                            logging.info(f'Nacked with reason={e.reason}')
+                            return None
+                        except InterestTimeout:
+                            logging.info(f'Timeout for interest {arg}')
+                            return None
 
-                    # Interest を送信
-                    try:
-                        return await get_data_on_process(arg, child_nonce_str)
-                    except InterestNack as e:
-                        logging.info(f'Nacked with reason={e.reason}')
-                        return None
-                    except InterestTimeout:
-                        logging.info(f'Timeout for interest {arg}')
-                        return None
+                    tasks = [fetch_content(arg, parent_nonce) for arg in args]
+                    contents = await asyncio.gather(*tasks)
 
-                tasks = [fetch_content(arg, parent_nonce) for arg in args]
-                contents = await asyncio.gather(*tasks)
+                    logging.info(f"Data collected: {contents}")
 
-                logging.info(f"Data collected: {contents}")
+                    # 関数名を取得
+                    my_function_name = extract_my_function_name(name)
 
-                # 関数名を取得
-                my_function_name = extract_my_function_name(name)
+                    logging.info(f"Function name: {my_function_name}")
 
-                logging.info(f"Function name: {my_function_name}")
+                    # 関数を実行
+                    result = function_request_handler(my_function_name, contents)
 
-                # 関数を実行
-                result = function_request_handler(my_function_name, contents)
+                    logging.info(f"Processing result: {result}")
 
-                logging.info(f"Processing result: {result}")
+                    # データをセグメントに分割する
+                    seg_cnt = (len(result) + SEGMENT_SIZE - 1) // SEGMENT_SIZE
 
-                # 結果を返す
-                self.app.put_data(name, content=result, freshness_period=10000)
+                    print(f'segmentation count: {seg_cnt}')
+
+                    # パケット分割の時間を計測
+                    packets = [self.app.prepare_data(original_name + [Component.from_segment(i)],
+                                                result[i*SEGMENT_SIZE:(i+1)*SEGMENT_SIZE],
+                                                freshness_period=10000,
+                                                final_block_id=Component.from_segment(seg_cnt - 1))
+                            for i in range(seg_cnt)]
+                    
+                    # セグメントデータを保存
+                    self.segmented_data[Name.to_str(original_name)] = packets
+                    seg_no = 0
+                else:
+                    seg_no = Component.to_number(name[-1])
+
+                # セグメントデータを送信
+                self.app.put_raw_packet(self.segmented_data[Name.to_str(original_name)][seg_no])
+                return
 
             # イベントループで実行
             asyncio.create_task(async_on_interest())

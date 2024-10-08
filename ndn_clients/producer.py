@@ -3,7 +3,6 @@ from lib.ndn_producer import NDNProducer
 import sys
 
 def on_interest(name: str) -> str:
-    sleep(2)
     print(f"Interest: {name}")
     # name のスラッシュをスペースにして返す
     # return name[1:].replace("/", " ")

@@ -9,6 +9,15 @@ from ndn.types import InterestNack, InterestTimeout, InterestCanceled, Validatio
 from ndn.encoding import Name, Component
 from ndn.utils import timestamp
 
+SEGMENT_SIZE = 90
+
+def get_original_name(name: FormalName) -> FormalName:
+    original_name = ""
+    if Component.get_type(name[-1]) == Component.TYPE_SEGMENT:
+        original_name = Name.normalize(name[:-1])
+    else:
+        original_name = Name.normalize(name)
+    return original_name
 
 # ()を使う関係上、nameをデコードし、またメタデータを削除する
 # Name.to_str(name)でデコードした場合、/A/%28B%29/t=12411 のようになっているため、/A/(〇〇)/t=12411 のようにデコードする
