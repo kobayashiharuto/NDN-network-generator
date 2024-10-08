@@ -120,35 +120,9 @@ async def send_interest(app: NDNApp, name: str, nonce: Optional[str] = None) -> 
     except ValidationFailure:
         print(f'!!!ERROR!!!: Data failed to validate')
 
-# 別プロセスから無理やりInterestを送信
-async def get_data_on_process(name: str, nonce: str) -> Optional[bytes]:
-    try:
-        # 非同期プロセスを起動してInterestを送信
-        process = await asyncio.create_subprocess_exec(
-            'python3', './ndn_clients/lib/consumer_args.py', name, nonce,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        
-        stdout, stderr = await process.communicate()
-
-        if process.returncode == 0:
-            # 成功した場合、stdoutからデータを取得し、改行を削除して返す
-            return bytes(stdout).strip()
-        else:
-            print(f'!!!ERROR!!!: {stderr.decode()}')
-            return None
-    except Exception as e:
-        print(f'!!!ERROR!!!: {e}')
-        return None
-
 # function リクエストから、自分の関数名を取得する
 # /A/(/hoge,/B/func(/hoge)) のような構造であれば、/A が関数名になる
 def extract_my_function_name(name: FormalName) -> str:
     decoded_url = decode_and_remove_metadata(name)
     end_of_function_name = decoded_url.find('/(')
     return decoded_url[:end_of_function_name]
-
-if __name__ == '__main__':
-    data = asyncio.run(get_data_on_process('/nodeA/hoge'))
-    print(data)
