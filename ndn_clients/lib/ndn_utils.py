@@ -2,10 +2,13 @@ from asyncio import subprocess
 import asyncio
 from typing import Optional
 import urllib.parse
-from ndn.encoding import Name, FormalName
+from ndn.encoding import Name, FormalName, MetaInfo, BinaryStr
+from ndn.app_support.segment_fetcher import segment_fetcher
 from ndn.app import NDNApp
 from ndn.types import InterestNack, InterestTimeout, InterestCanceled, ValidationFailure
-from ndn.encoding import Name
+from ndn.encoding import Name, Component
+from ndn.utils import timestamp
+
 
 # ()を使う関係上、nameをデコードし、またメタデータを削除する
 # Name.to_str(name)でデコードした場合、/A/%28B%29/t=12411 のようになっているため、/A/(〇〇)/t=12411 のようにデコードする
@@ -69,17 +72,36 @@ def extract_first_level_args(name: FormalName) -> list[str]:
     return args
 
 # interestを送る
-async def send_interest(app: NDNApp, name: str, nonce: Optional[str] = None) -> Optional[bytes]:
+async def get_data(app: NDNApp, name: str, nonce: Optional[str] = None) -> Optional[bytes]:
+    result = b''
+
+    try:
+        async for seg in segment_fetcher(app, name):
+            data = bytes(seg)
+            result += data
+    except InterestNack as e:
+        print(f'!!!ERROR!!!: Nacked with reason={e.reason}')
+    except InterestTimeout:
+        print(f'!!!ERROR!!!: Timeout')
+    except InterestCanceled:
+        print(f'!!!ERROR!!!: Canceled')
+    except ValidationFailure:
+        print(f'!!!ERROR!!!: Data failed to validate')
+
+    return  result
+    
+# interestを送る
+async def send_interest(app: NDNApp, name: str, nonce: Optional[str] = None) -> Optional[tuple[FormalName, MetaInfo, BinaryStr]]:
     try:
         name = Name.from_str(name)
         if nonce:
             nonce = int(nonce)
         else:
             nonce = None
-        data_name, _meta_info, content = await app.express_interest(
+        data_name, meta_info, content = await app.express_interest(
             name, must_be_fresh=True, can_be_prefix=False, lifetime=10000, nonce=nonce)
 
-        return bytes(content) if content else None
+        return data_name, meta_info, content
     except InterestNack as e:
         print(f'!!!ERROR!!!: Nacked with reason={e.reason}')
     except InterestTimeout:
@@ -90,7 +112,7 @@ async def send_interest(app: NDNApp, name: str, nonce: Optional[str] = None) -> 
         print(f'!!!ERROR!!!: Data failed to validate')
 
 # 別プロセスから無理やりInterestを送信
-async def send_interest_process(name: str, nonce: str) -> Optional[bytes]:
+async def get_data_on_process(name: str, nonce: str) -> Optional[bytes]:
     try:
         # 非同期プロセスを起動してInterestを送信
         process = await asyncio.create_subprocess_exec(
@@ -119,5 +141,5 @@ def extract_my_function_name(name: FormalName) -> str:
     return decoded_url[:end_of_function_name]
 
 if __name__ == '__main__':
-    data = asyncio.run(send_interest_process('/nodeA/hoge'))
+    data = asyncio.run(get_data_on_process('/nodeA/hoge'))
     print(data)

@@ -2,14 +2,14 @@ from ndn.app import NDNApp
 from ndn.types import InterestNack, InterestTimeout, InterestCanceled, ValidationFailure
 import argparse
 
-from ndn_utils import send_interest
+from ndn_utils import get_data
 
 app = NDNApp()
 
 
 async def main(name, nonce):
     try:
-        content = await send_interest(app, name, nonce)
+        content = await get_data(app, name, nonce)
         print(content.decode('utf-8') if content else None)
     except InterestNack as e:
         print(f'Nacked with reason={e.reason}')
