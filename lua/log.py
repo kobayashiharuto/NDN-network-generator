@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from ndn.encoding import Name, Component, FormalName
 import logging
+import urllib.parse
 from typing import Optional, Dict, Any
 
 def get_original_name(name: FormalName) -> FormalName:
@@ -160,7 +161,8 @@ class Packet(ABC):
         """
         self.source_ip = source_ip
         self.destination_ip = destination_ip
-        self.name = name
+        # URLデコードしておく
+        self.name = urllib.parse.unquote(name)
         self.received_time = received_time or datetime.datetime.now()
 
     @abstractmethod
