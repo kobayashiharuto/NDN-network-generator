@@ -35,9 +35,9 @@ consumer,router1
 
 一番最初の node1,node2 はヘッダーです。
 
-上記の記述であれば、`router1 と router2`, `router2 と router3`, `producer1 と router1`, `consumer と router3` が相互につながったネットワークという意味になります。
+上記の記述であれば、router1 と router2, producer1 と router1, function1 と router2  consumer と router1 が相互につながったネットワークという意味になります。
 
-![Network Graph](network.svg)
+![Network Graph](network.png)
 
 
 ### 2. `config/node_info.csv` にそれぞれのノード起動時のコマンドを記述
