@@ -28,9 +28,9 @@ pip install -r requirements.txt
 ```csv
 node1,node2
 router1,router2
-router2,router3
 producer1,router1
-consumer,router3
+function1,router2
+consumer,router1
 ```
 
 一番最初の node1,node2 はヘッダーです。
@@ -46,10 +46,10 @@ consumer,router3
 
 ```csv
 node_name,command
-router1,""
-router2,""
+router1,"python3 ./lua/log.py"
+router2,"python3 ./lua/log.py"
 producer1,"python3 ./ndn_clients/producer.py /producer1"
-function1,"python3 ./ndn_clients/function.py /function1"
+function1,"python3 ./ndn_clients/function.py /function1 && python3 ./lua/log.py"
 consumer,""
 ```
 
