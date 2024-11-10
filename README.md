@@ -1,10 +1,12 @@
-# NDN Network Generator
+# NDN Network Generator (NDN-FCW+ と分散トレーシング実装版)
 
 NDN Network を CSV に設定を書くだけで自動的に構築します。
 
 ノードの設定、NLSR の設定、face を貼るところまで全て自動で行います。
 
-## 依存関係のインストール
+この実装では NDN-FCW+ の実装がサンプルに配置されており、さらにトレーシングの仕組みも導入されています。
+
+## 0. 依存関係のインストール
 
 ```
 pip install -r requirements.txt
@@ -16,6 +18,8 @@ pip install -r requirements.txt
 1. `config/node_info.csv` にそれぞれのノード起動時のコマンドを記述
 1. 起動
 1. それぞれのコンテナに入る
+1. consumer でリクエストする
+1. 分散トレーシングのログを可視化する
 
 ### 1. `config/network_relations.csv` にネットワークのつながりを記述
 
@@ -71,4 +75,56 @@ python src/main.py
 
 ```shell
 docker compose exec consumer bash
+```
+
+### 5. consumer でリクエストする
+
+consumer の中で以下のようにリクエスト
+
+```shell
+python3 ./ndn_clients/consumer.py
+```
+
+### 6. 分散トレーシングのログを可視化する
+
+ログ用の mysql コンテナは自動で立っていますので入ってログを可視化できます。
+
+```shell
+docker compose exec mysql bash
+```
+
+以下のようにログを取得できます。
+
+```
+root@4f5b62f8b7fd:/workspaces# python3 visualization/main.py 
+トレースを開始するリクエストID（nonce）を入力してください: 3501592025
+リクエストチェーン:
+3501592025 --> 3261777629
+3501592025 --> 2942250589
+
+Mermaid シーケンス図:
+sequenceDiagram
+participant Consumer
+participant Router (172.23.0.5)
+participant Router (172.23.0.6)
+participant Service
+participant Producer
+Consumer ->> Router (172.23.0.5): Interest /function1/xxaaa/(/producer1/aaa, /producer1/bbb) [3501592025] (+N/A)
+Router (172.23.0.5) ->> Router (172.23.0.6): Interest /function1/xxaaa/(/producer1/aaa, /producer1/bbb) [3501592025] (+0.02 ms)
+Router (172.23.0.6) ->> Service: Interest /function1/xxaaa/(/producer1/aaa, /producer1/bbb) [3501592025] (+0.20 ms)
+Service ->> Router (172.23.0.6): Interest /producer1/aaa [3261777629] (+10.93 ms)
+Router (172.23.0.6) ->> Router (172.23.0.5): Interest /producer1/aaa [3261777629] (+0.00 ms)
+Router (172.23.0.5) ->> Producer: Interest /producer1/aaa [3261777629] (+0.07 ms)
+Service ->> Router (172.23.0.6): Interest /producer1/bbb [2942250589] (+3.49 ms)
+Router (172.23.0.6) ->> Router (172.23.0.5): Interest /producer1/bbb [2942250589] (+0.01 ms)
+Router (172.23.0.5) ->> Producer: Interest /producer1/bbb [2942250589] (+0.20 ms)
+Producer ->> Router (172.23.0.5): Data /producer1/aaa [3261777629] (+19.15 ms)
+Router (172.23.0.5) ->> Router (172.23.0.6): Data /producer1/aaa [3261777629] (+0.00 ms)
+Router (172.23.0.6) ->> Service: Data /producer1/aaa [3261777629] (+0.07 ms)
+Producer ->> Router (172.23.0.5): Data /producer1/bbb [2942250589] (+41.41 ms)
+Router (172.23.0.5) ->> Router (172.23.0.6): Data /producer1/bbb [2942250589] (+0.00 ms)
+Router (172.23.0.6) ->> Service: Data /producer1/bbb [2942250589] (+0.09 ms)
+Service ->> Router (172.23.0.6): Data /function1/xxaaa/(/producer1/aaa, /producer1/bbb) [3501592025] (+20.20 ms)
+Router (172.23.0.6) ->> Router (172.23.0.5): Data /function1/xxaaa/(/producer1/aaa, /producer1/bbb) [3501592025] (+0.00 ms)
+Router (172.23.0.5) ->> Consumer: Data /function1/xxaaa/(/producer1/aaa, /producer1/bbb) [3501592025] (+0.06 ms)
 ```
