@@ -35,7 +35,7 @@ consumer,router1
 
 一番最初の node1,node2 はヘッダーです。
 
-上記の記述であれば、router1 と router2, producer1 と router1, function1 と router2  consumer と router1 が相互につながったネットワークという意味になります。
+上記の記述であれば、router1 と router2, producer1 と router1, function1 と router2, consumer と router1 が相互につながったネットワークという意味になります。
 
 ![Network Graph](network.png)
 
