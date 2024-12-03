@@ -1,6 +1,7 @@
 import asyncio
 import os
 import random
+import subprocess
 from typing import Callable, Optional, List, Dict, Any
 from ndn.app import NDNApp
 from ndn.encoding import Name, InterestParam, BinaryStr, FormalName, Component
@@ -9,6 +10,7 @@ import logging
 import datetime
 import mysql.connector
 from mysql.connector import Error
+import urllib.parse
 
 from lib.ndn_utils import SEGMENT_SIZE, extract_first_level_args, extract_my_function_name, get_data, get_original_name, is_function_request
 
@@ -74,8 +76,24 @@ class DatabaseManager:
             """
             cursor.execute(create_request_chain_table)
 
+            # service_logs テーブルの作成
+            create_service_logs_table = """
+            CREATE TABLE IF NOT EXISTS service_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                request_id VARCHAR(255),
+                name VARCHAR(1024),
+                ip_address VARCHAR(45),
+                data_size_before INT,
+                data_size_after INT,
+                start_time DATETIME,
+                end_time DATETIME,
+                processing_time_ms FLOAT
+            );
+            """
+            cursor.execute(create_service_logs_table)
+
             self.connection.commit()
-            logging.info("Table 'request_chain' is ready.")
+            logging.info("Tables 'request_chain' and 'service_logs' are ready.")
         except Error as e:
             logging.error(f"Error creating tables: {e}")
             self.connection.rollback()
@@ -106,6 +124,39 @@ class DatabaseManager:
         finally:
             cursor.close()
 
+    def insert_service_log(self, request_id: str, name: str, ip_address: str,
+                           data_size_before: int, data_size_after: int,
+                           start_time: datetime.datetime, end_time: datetime.datetime, processing_time_ms: float) -> None:
+        """
+        service_logs テーブルにログエントリを追加する。
+
+        Args:
+            request_id (str): 親の Nonce。
+            name (str): リクエストの名前。
+            ip_address (str): サービスノードのIPアドレス。
+            data_size_before (int): 処理前のデータサイズ（バイト）。
+            data_size_after (int): 処理後のデータサイズ（バイト）。
+            start_time (datetime.datetime): 処理開始時間。
+            end_time (datetime.datetime): 処理終了時間。
+            processing_time_ms (float): 処理時間（ミリ秒）。
+        """
+        insert_query = """
+        INSERT INTO service_logs (request_id, name, ip_address, data_size_before, data_size_after, start_time, end_time, processing_time_ms)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        name = urllib.parse.unquote(name)
+        data = (request_id, name, ip_address, data_size_before, data_size_after, start_time, end_time, processing_time_ms)
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute(insert_query, data)
+            self.connection.commit()
+            logging.info(f"Service log added for request_id={request_id}")
+        except Error as e:
+            logging.error(f"Error inserting service log: {e}")
+            self.connection.rollback()
+        finally:
+            cursor.close()
+
     def close(self) -> None:
         """
         データベース接続を閉じる。
@@ -123,6 +174,24 @@ class NDNFunction:
         self.db_manager = DatabaseManager(DB_CONFIG)
         self.segmented_data = {}
 
+        # IPアドレスの取得
+        self.my_ip = self.get_ip_address()
+        logging.info(f"My IP address: {self.my_ip}")
+
+    def get_ip_address(self) -> str:
+        """
+        サービスノードのIPアドレスを取得する。
+
+        Returns:
+            str: サービスノードのIPアドレス。
+        """
+        try:
+            result = subprocess.run(["hostname", "-I"], stdout=subprocess.PIPE, text=True, check=True)
+            my_ip = result.stdout.strip().split()[0]  # 複数のIPが返される場合、最初のものを使用
+            return my_ip
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error obtaining IP address: {e}")
+            return "Unknown"
 
     def run(self, prefix: str, function_request_handler: Callable[[str, List[bytes]], bytes], data_request_handler: Callable[[str], str]):
         """
@@ -191,6 +260,9 @@ class NDNFunction:
                     # 親の Nonce（受信した Interest の Nonce）
                     parent_nonce = nonce_str
 
+                    # リクエスト名を文字列として取得
+                    request_name = Name.to_str(name)
+
                     # それぞれを Interest で並列でリクエストし、データを集める
                     async def fetch_content(arg, parent_nonce):
                         # 子の Nonce を生成
@@ -220,8 +292,35 @@ class NDNFunction:
 
                     logging.info(f"Function name: {my_function_name}")
 
+                    # 処理前のデータサイズを計算
+                    data_size_before = sum(len(arg) for arg in contents if arg is not None)
+
+                    # 処理開始時間を記録
+                    start_time = datetime.datetime.now()
+
                     # 関数を実行
                     result = function_request_handler(my_function_name, contents)
+
+                    # 処理終了時間を記録
+                    end_time = datetime.datetime.now()
+
+                    # 処理後のデータサイズを計算
+                    data_size_after = len(result)
+
+                    # 処理時間を計算（ミリ秒）
+                    processing_time_ms = (end_time - start_time).total_seconds() * 1000
+
+                    # service_logs テーブルにログを挿入
+                    self.db_manager.insert_service_log(
+                        request_id=parent_nonce,
+                        name=request_name,
+                        ip_address=self.my_ip,
+                        data_size_before=data_size_before,
+                        data_size_after=data_size_after,
+                        start_time=start_time,
+                        end_time=end_time,
+                        processing_time_ms=processing_time_ms
+                    )
 
                     logging.info(f"Processing result: {result}")
 

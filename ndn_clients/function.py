@@ -1,8 +1,11 @@
 from lib.ndn_function import NDNFunction
 import sys
+import time
 
 def function_request_handler(name: str, args: list[bytes]) -> bytes:
     args = [arg.decode() for arg in args]
+    # ここで1秒待つ
+    time.sleep(1)
     args = ",".join(args)
     return f"Hello, {name}! Args: {args}".encode()
 

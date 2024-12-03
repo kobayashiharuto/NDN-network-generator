@@ -1,6 +1,11 @@
 from flask import Flask, jsonify, request
 from database import connect_db
-from utils import get_related_nonces, get_packet_logs, deduce_roles, generate_nodes, generate_edges
+from utils import (
+    get_related_nonces, get_packet_logs, deduce_roles,
+    generate_nodes, generate_edges,
+    calculate_node_processing_times, calculate_edge_latencies,
+    get_service_processing_times  # 必要な関数をインポート
+)
 
 app = Flask(__name__)
 
@@ -21,7 +26,15 @@ def get_nodes():
 
     logs = get_packet_logs(connection, list(all_nonces))
     roles = deduce_roles(logs)
-    nodes = generate_nodes(roles)
+
+    # ノードの処理時間を計算
+    node_processing_times = calculate_node_processing_times(logs)
+
+    # サービスの処理時間を取得
+    service_processing_times = get_service_processing_times(connection, list(all_nonces))
+
+    # ノードデータを生成
+    nodes = generate_nodes(roles, node_processing_times, service_processing_times)
 
     connection.close()
     return jsonify(nodes)
@@ -42,7 +55,15 @@ def get_edges():
     all_nonces = visited.union(set(chain_dict.keys()))
 
     logs = get_packet_logs(connection, list(all_nonces))
-    edges = generate_edges(logs)
+
+    # 役割の推測（必要であれば）
+    roles = deduce_roles(logs)
+
+    # エッジの遅延時間を計算
+    edge_latencies = calculate_edge_latencies(logs)
+
+    # エッジデータを生成
+    edges = generate_edges(logs, edge_latencies)
 
     connection.close()
     return jsonify(edges)

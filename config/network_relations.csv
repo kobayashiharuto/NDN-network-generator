@@ -1,5 +1,5 @@
 node1,node2
-router1,router2
-producer1,router1
-function1,router2
 consumer,router1
+function1,router1
+function1,router2
+producer1,router2
