@@ -4,6 +4,12 @@ from jinja2 import Template
 # サービスの部分には、各ノードの情報を入れる
 docker_compose_template = Template('''\
 version: "3"
+                                   
+networks:
+  tempo_network:
+    external: true  
+    driver: bridge
+
 services:
   mysql:
     image: mysql:8.0
@@ -17,13 +23,10 @@ services:
     volumes:
       - ../config/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - ndn-network
+      - tempo_network
     ports:
       - "3306:3306"  # ホストからアクセスする必要がある場合のみ
 {{ services }}
-networks:
-  ndn-network:
-    driver: bridge
 ''')
 
 # docker compose ファイルにおけるサービス部分単体のテンプレート
@@ -37,7 +40,7 @@ service_template = Template('''\
       - NET_RAW
       - NET_ADMIN
     networks:
-      ndn-network:
+      - tempo_network
     volumes:
       - ..:/workspaces
     tty: true

@@ -1,0 +1,25 @@
+
+          /\      |‾‾| /‾‾/   /‾‾/   
+     /\  /  \     |  |/  /   /  /    
+    /  \/    \    |     (   /   ‾‾\  
+   /          \   |  |\  \ |  (‾)  | 
+  / __________ \  |__| \__\ \_____/ .io
+
+  execution: local
+     script: main.js
+     output: -
+
+  scenarios: (100.00%) 1 scenario, 1 max VUs, 20m30s max duration (incl. graceful stop):
+           * default: 1 looping VUs for 20m0s (gracefulStop: 30s)
+
+{}
+
+     █ teardown
+
+     data_received........: 0 B 0 B/s
+     data_sent............: 0 B 0 B/s
+     iteration_duration...: avg=7.77ms min=7.77ms med=7.77ms max=7.77ms p(90)=7.77ms p(95)=7.77ms
+
+
+running (00m00.6s), 0/1 VUs, 0 complete and 1 interrupted iterations
+default ✗ [   0% ] 1 VUs  00m00.6s/20m0s

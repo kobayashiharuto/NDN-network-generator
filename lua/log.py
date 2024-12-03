@@ -29,7 +29,7 @@ DB_CONFIG = {
     'database': 'ndn_logs'
 }
 
-# tshark コマンド（必要に応じてオプションを調整してください）
+# tshark コマンド
 TSHARK_CMD = [
     "tshark",
     "-i",
