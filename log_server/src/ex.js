@@ -4,26 +4,32 @@ const moment = require('moment');
 
 // パケットログデータ
 const logs = [
-  { id: 19, request_id: '1163820534', name: '/function1/service/(/producer1/data, /producer2/data)', packet_type: 0, source_ip: '172.26.0.10', destination_ip: '172.26.0.14', node_ip: '172.26.0.14', received_time: '2024-12-03T10:58:22.235Z' },
-  { id: 20, request_id: '1163820534', name: '/function1/service/(/producer1/data, /producer2/data)', packet_type: 0, source_ip: '172.26.0.14', destination_ip: '172.26.0.8', node_ip: '172.26.0.14', received_time: '2024-12-03T10:58:22.236Z' },
-  { id: 16, request_id: '2180948974', name: '/producer1/data', packet_type: 0, source_ip: '172.26.0.8', destination_ip: '172.26.0.13', node_ip: '172.26.0.13', received_time: '2024-12-03T10:58:22.246Z' },
-  { id: 18, request_id: '2180948974', name: '/producer1/data', packet_type: 0, source_ip: '172.26.0.13', destination_ip: '172.26.0.11', node_ip: '172.26.0.13', received_time: '2024-12-03T10:58:22.247Z' },
-  { id: 13, request_id: '2847240376', name: '/producer2/data', packet_type: 0, source_ip: '172.26.0.8', destination_ip: '172.26.0.12', node_ip: '172.26.0.12', received_time: '2024-12-03T10:58:22.252Z' },
-  { id: 14, request_id: '2847240376', name: '/producer2/data', packet_type: 0, source_ip: '172.26.0.12', destination_ip: '172.26.0.15', node_ip: '172.26.0.12', received_time: '2024-12-03T10:58:22.253Z' },
-  { id: 21, request_id: '2180948974', name: '/producer1/data', packet_type: 1, source_ip: '172.26.0.11', destination_ip: '172.26.0.13', node_ip: '172.26.0.13', received_time: '2024-12-03T10:58:22.264Z' },
-  { id: 22, request_id: '2180948974', name: '/producer1/data', packet_type: 1, source_ip: '172.26.0.13', destination_ip: '172.26.0.8', node_ip: '172.26.0.13', received_time: '2024-12-03T10:58:22.265Z' },
-  { id: 15, request_id: '2847240376', name: '/producer2/data', packet_type: 1, source_ip: '172.26.0.15', destination_ip: '172.26.0.12', node_ip: '172.26.0.12', received_time: '2024-12-03T10:58:22.267Z' },
-  { id: 17, request_id: '2847240376', name: '/producer2/data', packet_type: 1, source_ip: '172.26.0.12', destination_ip: '172.26.0.8', node_ip: '172.26.0.12', received_time: '2024-12-03T10:58:22.268Z' },
-  { id: 23, request_id: '1163820534', name: '/function1/service/(/producer1/data, /producer2/data)', packet_type: 1, source_ip: '172.26.0.8', destination_ip: '172.26.0.14', node_ip: '172.26.0.14', received_time: '2024-12-03T10:58:22.793Z' },
-  { id: 24, request_id: '1163820534', name: '/function1/service/(/producer1/data, /producer2/data)', packet_type: 1, source_ip: '172.26.0.14', destination_ip: '172.26.0.10', node_ip: '172.26.0.14', received_time: '2024-12-03T10:58:22.794Z' },
+  { id: 84, session: 2201794901, path: "/function1/service/(/producer1/data, /producer2/data)", flag: 1, src: "172.26.0.12", dest: "172.26.0.13", nextHop: "172.26.0.12", timestamp: "2024-12-03 13:03:03.824151" },
+  { id: 83, session: 2201794901, path: "/function1/service/(/producer1/data, /producer2/data)", flag: 1, src: "172.26.0.10", dest: "172.26.0.12", nextHop: "172.26.0.12", timestamp: "2024-12-03 13:03:03.823998" },
+  { id: 82, session: 2201794901, path: "/function1/service/(/producer1/data, /producer2/data)", flag: 1, src: "172.26.0.10", dest: "172.26.0.12", nextHop: "172.26.0.10", timestamp: "2024-12-03 13:03:03.823992" },
+  { id: 75, session: 3547770322, path: "/producer2/data", flag: 1, src: "172.26.0.15", dest: "172.26.0.10", nextHop: "172.26.0.10", timestamp: "2024-12-03 13:03:03.291683" },
+  { id: 79, session: 3547770322, path: "/producer2/data", flag: 1, src: "172.26.0.15", dest: "172.26.0.10", nextHop: "172.26.0.15", timestamp: "2024-12-03 13:03:03.291678" },
+  { id: 78, session: 3547770322, path: "/producer2/data", flag: 1, src: "172.26.0.14", dest: "172.26.0.15", nextHop: "172.26.0.15", timestamp: "2024-12-03 13:03:03.291509" },
+  { id: 74, session: 2991219386, path: "/producer1/data", flag: 1, src: "172.26.0.11", dest: "172.26.0.10", nextHop: "172.26.0.10", timestamp: "2024-12-03 13:03:03.288407" },
+  { id: 73, session: 2991219386, path: "/producer1/data", flag: 1, src: "172.26.0.11", dest: "172.26.0.10", nextHop: "172.26.0.11", timestamp: "2024-12-03 13:03:03.288214" },
+  { id: 72, session: 2991219386, path: "/producer1/data", flag: 1, src: "172.26.0.9", dest: "172.26.0.11", nextHop: "172.26.0.11", timestamp: "2024-12-03 13:03:03.287894" },
+  { id: 77, session: 3547770322, path: "/producer2/data", flag: 0, src: "172.26.0.15", dest: "172.26.0.14", nextHop: "172.26.0.15", timestamp: "2024-12-03 13:03:03.267557" },
+  { id: 76, session: 3547770322, path: "/producer2/data", flag: 0, src: "172.26.0.10", dest: "172.26.0.15", nextHop: "172.26.0.15", timestamp: "2024-12-03 13:03:03.267185" },
+  { id: 71, session: 3547770322, path: "/producer2/data", flag: 0, src: "172.26.0.10", dest: "172.26.0.15", nextHop: "172.26.0.10", timestamp: "2024-12-03 13:03:03.267171" },
+  { id: 69, session: 2991219386, path: "/producer1/data", flag: 0, src: "172.26.0.11", dest: "172.26.0.9", nextHop: "172.26.0.11", timestamp: "2024-12-03 13:03:03.259520" },
+  { id: 67, session: 2991219386, path: "/producer1/data", flag: 0, src: "172.26.0.10", dest: "172.26.0.11", nextHop: "172.26.0.11", timestamp: "2024-12-03 13:03:03.259272" },
+  { id: 70, session: 2991219386, path: "/producer1/data", flag: 0, src: "172.26.0.10", dest: "172.26.0.11", nextHop: "172.26.0.10", timestamp: "2024-12-03 13:03:03.259262" },
+  { id: 68, session: 2201794901, path: "/function1/service/(/producer1/data, /producer2/data)", flag: 0, src: "172.26.0.12", dest: "172.26.0.10", nextHop: "172.26.0.10", timestamp: "2024-12-03 13:03:03.242613" },
+  { id: 81, session: 2201794901, path: "/function1/service/(/producer1/data, /producer2/data)", flag: 0, src: "172.26.0.12", dest: "172.26.0.10", nextHop: "172.26.0.12", timestamp: "2024-12-03 13:03:03.242597" },
+  { id: 80, session: 2201794901, path: "/function1/service/(/producer1/data, /producer2/data)", flag: 0, src: "172.26.0.13", dest: "172.26.0.12", nextHop: "172.26.0.12", timestamp: "2024-12-03 13:03:03.242476" }
 ];
 
-// request_chain データ（親子関係）
-const requestChain = {
-  '1163820534': null, // ルートリクエスト
-  '2180948974': '1163820534',
-  '2847240376': '1163820534',
-};
+const request_chain = [
+  { id: 11, parent_nonce: 2201794901, child_nonce: 2991219386 },
+  { id: 12, parent_nonce: 2201794901, child_nonce: 3547770322 }
+]
+
+const root_request_id = 2201794901;
 
 // durationMS ヘルパー関数
 const durationMS = (num) => num;
@@ -75,15 +81,35 @@ function generateSpans(logs, requestChain) {
   const firstRouterDataLog = logs.find(log => log.packet_type === 1 && log.name === firstRouterReceiveLog.name && log.source_ip === firstRouterReceiveLog.destination_ip);
   const firstRouterFowardingDuration = moment(firstRouterDataLog.received_time).diff(moment(firstRouterFowardingInterestLog.received_time));
   // startDuration はルーターがレシーブした時間とフォワーディングした時間の差
-  const startDuration = moment(firstRouterFowardingInterestLog.received_time).diff(moment(firstRouterReceiveInterestLog.received_time));
+  const firstRouterStartDuration = moment(firstRouterFowardingInterestLog.received_time).diff(moment(firstRouterReceiveInterestLog.received_time));
   const firstRouterFowardingSpan = {
     service: "router (" + firstRouterFowardingInterestLog.node_ip + ")",
     name: "fowarding " + firstRouterReceiveInterestLog.name,
     duration: durationMS(firstRouterFowardingDuration),
-    startDuration: durationMS(startDuration)
+    startDuration: durationMS(firstRouterStartDuration)
   }
 
-  // ここからは request ごとに
+  index_cursor++;
+
+  // そして1リクエストの最後として、サービスでのinterestレシーブとデータのフォワーディングのスパンを作成
+  // { service: "function (172.26.0.9)", name: "/function1/service/(/producer1/data, /producer2/data)", startDuration: durationMS(5), duration: durationMS(470) },
+  const firstServiceInterestLog = logs[index_cursor];
+  const firstServiceDataLog = logs.find(log => log.packet_type === 1 && log.name === firstServiceInterestLog.name && log.source_ip === firstServiceInterestLog.destination_ip);
+  const firstServiceDuration = moment(firstServiceDataLog.received_time).diff(moment(firstServiceInterestLog.received_time));
+  const firstServiceStartDuration = moment(firstServiceInterestLog.received_time).diff(moment(firstRouterFowardingInterestLog.received_time));
+  const firstServiceSpan = {
+    service: "function (" + firstServiceInterestLog.node_ip + ")",
+    name: firstServiceInterestLog.name,
+    duration: durationMS(firstServiceDuration),
+    startDuration: durationMS(firstServiceStartDuration)
+  }
+
+  spans.push(firstServiceSpan);
+  index_cursor++;
+
+  // サービスの次はサービスがリクエストする新しいリクエストとなる
+  // 同じノリでサービスがproducerに辿り着くまで潜っていく
+
 
 
   return spans;
