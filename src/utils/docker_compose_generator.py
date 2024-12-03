@@ -45,6 +45,8 @@ service_template = Template('''\
       - ..:/workspaces
     tty: true
     stdin_open: true
+    depends_on:
+      - mysql
     command: {{ command }}
     environment:
       {%- for env_name, env_value in enviroments.items() %}

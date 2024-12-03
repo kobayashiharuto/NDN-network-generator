@@ -1,6 +1,0 @@
-node_name,command
-router1,"python3 ./lua/log.py"
-router2,"python3 ./lua/log.py"
-producer1,"python3 ./ndn_clients/producer.py /producer1"
-function1,"python3 ./ndn_clients/function.py /function1 && python3 ./lua/log.py"
-consumer,""

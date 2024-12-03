@@ -2,4 +2,6 @@ node1,node2
 consumer,router1
 function1,router1
 function1,router2
+function1,router3
 producer1,router2
+producer2,router3
