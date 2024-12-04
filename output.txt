@@ -1,29 +1,36 @@
-2024-12-03 21:43:24,580 [INFO] MySQL database connection established.
-2024-12-03 21:43:24,588 [INFO] Table 'packet_logs' is ready.
-2024-12-03 21:43:24,591 [INFO] My IP address: 172.26.0.14
-2024-12-03 21:43:33,738 [INFO] Interrupted by user.
-2024-12-03 21:43:33,741 [INFO] MySQL database connection closed.
-/bin/sh: 13: [Bpython3: not found
-2024-12-03 21:44:12,409 [INFO] MySQL database connection established.
-2024-12-03 21:44:12,414 [INFO] Table 'packet_logs' is ready.
-2024-12-03 21:44:12,416 [INFO] My IP address: 172.26.0.14
-2024-12-03 21:44:14,903 [INFO] Interrupted by user.
-2024-12-03 21:44:14,905 [INFO] MySQL database connection closed.
-2024-12-03 21:44:22,852 [INFO] MySQL database connection established.
-2024-12-03 21:44:22,858 [INFO] Table 'packet_logs' is ready.
-2024-12-03 21:44:22,860 [INFO] My IP address: 172.26.0.14
-[2024-12-03 21:45:21]INFO:MySQL database connection established.
-[2024-12-03 21:45:21]INFO:Tables 'request_chain' and 'service_logs' are ready.
-[2024-12-03 21:45:21]INFO:My IP address: 172.26.0.14
-Prefix is already advertised/inserted.
-Name prefix update error (code: 204)
-[2024-12-03 22:01:16]INFO:MySQL database connection established.
-[2024-12-03 22:01:16]INFO:Tables 'request_chain' and 'service_logs' are ready.
-[2024-12-03 22:01:16]INFO:My IP address: 172.26.0.10
+[2024-12-04 23:22:44]INFO:MySQL database connection established.
+[2024-12-04 23:22:44]INFO:Tables 'request_chain' and 'service_logs' are ready.
+[2024-12-04 23:22:44]INFO:My IP address: 172.26.0.15
+Applied Name prefix update successfully: (Advertise: /function2)
+[2024-12-04 23:22:44]INFO:MySQL database connection established.
+[2024-12-04 23:22:44]INFO:Tables 'request_chain' and 'service_logs' are ready.
+[2024-12-04 23:22:44]INFO:My IP address: 172.26.0.16
 Applied Name prefix update successfully: (Advertise: /function1)
-[2024-12-03 22:03:03]INFO:RCT entry added: parent_nonce=2201794901, child_nonce=2991219386
-[2024-12-03 22:03:03]INFO:RCT entry added: parent_nonce=2201794901, child_nonce=3547770322
-[2024-12-03 22:03:03]INFO:Data collected: [b'1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!', b'1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!']
-[2024-12-03 22:03:03]INFO:Function name: /function1/service
-[2024-12-03 22:03:03]INFO:Service log added for request_id=2201794901
-[2024-12-03 22:03:03]INFO:Processing result: b'Hello, /function1/service! Args: 1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!,1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!'
+[2024-12-04 23:25:55]INFO:RCT entry added: parent_nonce=1176471760, child_nonce=420222973
+[2024-12-04 23:25:55]INFO:RCT entry added: parent_nonce=1176471760, child_nonce=2496764753
+[2024-12-04 23:25:55]INFO:Data collected: [b'1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!', b'1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!']
+[2024-12-04 23:25:55]INFO:Function name: /function1/service
+[2024-12-04 23:25:56]INFO:Service log added for request_id=1176471760
+[2024-12-04 23:25:56]INFO:Processing result: b'Hello, /function1/service! Args: 1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!,1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!'
+[2024-12-04 23:37:55]INFO:RCT entry added: parent_nonce=2745865937, child_nonce=920785745
+[2024-12-04 23:37:55]INFO:RCT entry added: parent_nonce=2745865937, child_nonce=1546504577
+[2024-12-04 23:37:55]INFO:RCT entry added: parent_nonce=920785745, child_nonce=4233776791
+[2024-12-04 23:37:55]INFO:Data collected: [b'1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!']
+[2024-12-04 23:37:55]INFO:Function name: /function2/service
+[2024-12-04 23:37:56]INFO:Service log added for request_id=920785745
+[2024-12-04 23:37:56]INFO:Processing result: b'Hello, /function2/service! Args: 1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!'
+[2024-12-04 23:37:56]INFO:Data collected: [b'Hello, /function2/service! Args: 1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!', b'1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!']
+[2024-12-04 23:37:56]INFO:Function name: /function1/service
+[2024-12-04 23:37:56]INFO:Service log added for request_id=2745865937
+[2024-12-04 23:37:56]INFO:Processing result: b'Hello, /function1/service! Args: Hello, /function2/service! Args: 1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!,1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!'
+[2024-12-04 23:41:36]INFO:RCT entry added: parent_nonce=173083318, child_nonce=2715076668
+[2024-12-04 23:41:36]INFO:RCT entry added: parent_nonce=173083318, child_nonce=1990120445
+[2024-12-04 23:41:36]INFO:RCT entry added: parent_nonce=2715076668, child_nonce=3977938537
+[2024-12-04 23:41:36]INFO:Data collected: [b'1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!']
+[2024-12-04 23:41:36]INFO:Function name: /function2/service
+[2024-12-04 23:41:36]INFO:Service log added for request_id=2715076668
+[2024-12-04 23:41:36]INFO:Processing result: b'Hello, /function2/service! Args: 1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!'
+[2024-12-04 23:41:36]INFO:Data collected: [b'Hello, /function2/service! Args: 1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!', b'1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!']
+[2024-12-04 23:41:36]INFO:Function name: /function1/service
+[2024-12-04 23:41:37]INFO:Service log added for request_id=173083318
+[2024-12-04 23:41:37]INFO:Processing result: b'Hello, /function1/service! Args: Hello, /function2/service! Args: 1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!,1helllohelllohelllohelllo2helllohelllohelllohelllo3helllohelllohelllohelllo4helllohelllohelllohelllo5helllohelllohelllohelllo6hhelllohelllohellloelllo7helllohelllohelllohelllo8helllohelllohelllohelllo9!helllohelllohelllohelllohelllohelllohelllo!!!!!'
