@@ -17,6 +17,7 @@ def data_request_handler(name: str) -> str:
 
 
 if __name__ == '__main__':
+    time.sleep(10)
     producer = NDNFunction()
     # ここで引数からprefixを取得する
     if len(sys.argv) < 2:

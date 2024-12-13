@@ -1,5 +1,6 @@
 # database.py
 
+import time
 import mysql.connector
 from mysql.connector import Error
 

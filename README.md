@@ -125,7 +125,7 @@ tempo のダッシュボード: http://localhost:3000/explore?schemaVersion=1&pa
 cd log_server
 docker compose exec log-api bash
 cd /app
-pip install -r requirement.txt
+pip install -r requirements.txt
 python3 src/app.py
 ```
 
@@ -140,7 +140,7 @@ python3 ndn_clients/consumer1.py
 
 ```
 cd log_server
-docker compose exec app as
+docker compose exec app ash
 apk add --update nodejs npm
 sh run.sh
 ```
