@@ -26,6 +26,11 @@ services:
       - tempo_network
     ports:
       - "3306:3306"  # ホストからアクセスする必要がある場合のみ
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
 {{ services }}
 ''')
 
@@ -46,7 +51,8 @@ service_template = Template('''\
     tty: true
     stdin_open: true
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     command: {{ command }}
     environment:
       {%- for env_name, env_value in enviroments.items() %}

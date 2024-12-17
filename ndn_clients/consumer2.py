@@ -25,8 +25,7 @@ async def send_interest_with_sleep(app, name, sleep_time, id):
 async def main():
     try:
         content = await get_data(app, '/function1/service/( /function2/service/(/producer4/data), /producer3/data)')
-        # content = await get_data(app, '/function1/xxaaa/(/producer1/aaa)')
-        # content = await get_data(app, '/producer1/aaa')
+
         print(bytes(content) if content else None)
     except InterestNack as e:
         print(f'Nacked with reason={e.reason}')
