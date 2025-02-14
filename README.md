@@ -13,7 +13,6 @@ NDN Network を CSV に設定を書くだけで自動的に構築します。
 1. `config/network_relations.csv` にネットワークのつながりを記述
 1. `config/node_info.csv` にそれぞれのノード起動時のコマンドを記述
 1. 起動
-1. コンテナに入る
 1. リクエストする
 
 
@@ -68,21 +67,21 @@ consumer,""
 python src/main.py
 ```
 
-### 5. コンテナに入る
+### 5. リクエストする
 
 `docker-compose.yml` は `generated/` の中に自動的に生成されています。
 
 このディレクトリに移動すれば `docker compose` 系のコマンドを使うことができます。
 
-以下のようにコンテナに入れます。(ノード名が `consumer` のコンテナに入りたい場合。指定したノード名とコンテナ名は対応しています。)
+以下のように `consumer` コンテナに入れます。(`config/network_relations.csv` で指定したノード名とコンテナ名は対応しています)
 
 ```shell
 docker compose exec consumer bash
 ```
 
-### 6. リクエストする
+そしたら、`ndn_clients` はそれぞれのコンテナの `./ndn_clients` にマウントされています。
 
-`ndn_clients` はそれぞれのコンテナの `./ndn_clients` にマウントされているので、リクエストする場合は `consumer` の参考実装である `./ndn_clients/consumer.py` を実行します。
+リクエストする場合は `consumer` の参考実装である `./ndn_clients/consumer.py` を実行します。
 
 ```python
 python3 ./ndn_clients/consumer.py
