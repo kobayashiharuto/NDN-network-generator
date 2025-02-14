@@ -4,20 +4,25 @@ NDN Network を CSV に設定を書くだけで自動的に構築します。
 
 ノードの設定、NLSR の設定、face を貼るところまで全て自動で行います。
 
-## 依存関係のインストール
+また、NDN-FCW+の環境も構築できます。
 
-```
-pip install -r requirements.txt
-```
 
 ## 使い方
 
+1. 依存関係のインストール
 1. `config/network_relations.csv` にネットワークのつながりを記述
 1. `config/node_info.csv` にそれぞれのノード起動時のコマンドを記述
 1. 起動
 1. それぞれのコンテナに入る
 
-### 1. `config/network_relations.csv` にネットワークのつながりを記述
+
+### 1. 依存関係のインストール
+
+```
+pip install -r requirements.txt
+```
+
+### 2. `config/network_relations.csv` にネットワークのつながりを記述
 
 `network_relations.csv` にはノード間のつながりを記述します。
 
@@ -36,7 +41,7 @@ consumer,router3
 ![Network Graph](network.svg)
 
 
-### 2. `config/node_info.csv` にそれぞれのノード起動時のコマンドを記述
+### 3. `config/node_info.csv` にそれぞれのノード起動時のコマンドを記述
 
 次に、`node_info.csv` にそれぞれのノードで実行するコマンドを書いていきます。
 
@@ -53,7 +58,7 @@ consumer,""
 
 また、`ndn_clients/` にサンプル的に動かせる producer や function のプログラムがあります。
 
-### 3. 起動
+### 4. 起動
 
 以下で起動します。これにより、自動的に全てのノードが生成され、設定を元にNLSRの設定がされ、faceが貼られ、設定した起動時コマンドが実行されます。
 
@@ -61,14 +66,24 @@ consumer,""
 python src/main.py
 ```
 
-### 4. それぞれのコンテナに入る
+### 5. それぞれのコンテナに入る
 
 `docker-compose.yml` は `generated/` の中に自動的に生成されています。
 
 このディレクトリに移動すれば `docker compose` 系のコマンドを使うことができます。
 
-以下のようにコンテナに入れます。(ノード名が `producer` のコンテナに入りたい場合。指定したノード名とコンテナ名は対応しています。)
+以下のようにコンテナに入れます。(ノード名が `consumer` のコンテナに入りたい場合。指定したノード名とコンテナ名は対応しています。)
 
 ```shell
 docker compose exec consumer bash
 ```
+
+### 6. リクエストする
+
+`ndn_clients` はそれぞれのコンテナの `./ndn_clients` にマウントされます。
+
+リクエストする場合は `consumer` の参考実装である `./ndn_clients/consumer.py` を実行します。
+
+### [オプション]function の中身をいじる
+
+`function` の参考実装がありますので、それをいじりましょう。

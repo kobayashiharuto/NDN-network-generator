@@ -1,12 +1,13 @@
 from lib.ndn_function import NDNFunction
 import sys
 
+# ここが function の中身
 def function_request_handler(name: str, args: list[bytes]) -> bytes:
     args = [arg.decode() for arg in args]
     args = ",".join(args)
     return f"Hello, {name}! Args: {args}".encode()
 
-
+# function ノードが producer リクエストを捌く場合
 def data_request_handler(name: str) -> str:
     print(f"Interest: {name}")
     return "DATA"
