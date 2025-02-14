@@ -12,9 +12,6 @@ NETWORK_RELATIONS_PATH = './config/network_relations.csv'
 # ノード情報のCSVファイルのパス
 NODE_INFO_PATH = './config/node_info.csv'
 
-# docker-compose.yml に使う dockerfile のパス
-DOCKERFILE_PATH = './config/dockerfile'
-
 # Dockerfileのコピー元パス
 DOCKERFILE_ORIGIN_PATH = './config/dockerfile'
 
@@ -73,7 +70,7 @@ def main():
     # requirements.txt を docker-compose.yml と同じディレクトリにコピー
     shutil.copy(REQUIREMENTS_PATH, GENERATE_DIR)
     
-    # 生成結果のログ、ファイル一覧を日本語で表示
+    # 生成結果のログ、ファイル一覧を表示
     print('生成が完了しました。')
     print('以下のファイルが生成されました。')
     print(f'  - {DOCKER_COMPOSE_PATH}')

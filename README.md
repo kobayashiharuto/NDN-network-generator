@@ -50,7 +50,6 @@ node_name,command
 router1,""
 router2,""
 producer1,"python3 ./ndn_clients/producer.py /producer1"
-function1,"python3 ./ndn_clients/function.py /function1"
 consumer,""
 ```
 
