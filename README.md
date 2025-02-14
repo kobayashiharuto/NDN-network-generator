@@ -46,6 +46,10 @@ consumer,router3
 
 次に、`node_info.csv` にそれぞれのノードで実行するコマンドを書いていきます。
 
+`ndn_clients/` にサンプル的に動かせる producer や function のプログラムがあります。
+
+ここはそれぞれのコンテナの `./ndn_clients` にマウントされますので、それを元にコマンド指定可能です。
+
 ```csv
 node_name,command
 router1,""
@@ -55,8 +59,6 @@ consumer,""
 ```
 
 特に実行しない場合は空文字列を入れます。
-
-また、`ndn_clients/` にサンプル的に動かせる producer や function のプログラムがあります。
 
 ### 4. 起動
 
@@ -80,9 +82,11 @@ docker compose exec consumer bash
 
 ### 6. リクエストする
 
-`ndn_clients` はそれぞれのコンテナの `./ndn_clients` にマウントされます。
+`ndn_clients` はそれぞれのコンテナの `./ndn_clients` にマウントされているので、リクエストする場合は `consumer` の参考実装である `./ndn_clients/consumer.py` を実行します。
 
-リクエストする場合は `consumer` の参考実装である `./ndn_clients/consumer.py` を実行します。
+```python
+python3 ./ndn_clients/consumer.py
+```
 
 ### [オプション] function ノードの function をいじる
 
