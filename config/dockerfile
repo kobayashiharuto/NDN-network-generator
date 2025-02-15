@@ -1,7 +1,7 @@
 # 自動生成時にコピーして使う、全ノード共通のDockerfile
 
 # ベースイメージの指定
-FROM hydrokhoos/ndn-all:arm
+FROM hydrokhoos/ndn-all:latest
 
 # パッケージの追加
 RUN apt update
