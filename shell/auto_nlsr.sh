@@ -14,6 +14,16 @@ echo "Using NLSR configuration file: $NLSR_CONFIG_FILE_PATH"
 
 # Start nlsr with the provided configuration file and suppress output
 nlsr -f "$NLSR_CONFIG_FILE_PATH" > /dev/null 2>&1 &
+pid=$!
+
+# 少し待機してプロセスがすぐ落ちるか確認（例: 3秒）
+sleep 3
+
+# プロセスがまだ生きているか確認
+if ! kill -0 $pid 2>/dev/null; then
+  echo "Error: nlsr failed to start." >&2
+  exit 1
+fi
 
 # Wait a moment to ensure nlsr has started
 sleep 2
