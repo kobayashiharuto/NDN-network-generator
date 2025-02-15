@@ -12,16 +12,24 @@ fi
 # どこのファイルを参照するかを出力
 echo "Using NLSR configuration file: $NLSR_CONFIG_FILE_PATH"
 
-# Start nlsr with the provided configuration file and suppress output
-nlsr -f "$NLSR_CONFIG_FILE_PATH" > /dev/null 2>&1 &
+
+logfile="/tmp/nlsr_error.log"
+
+# ログファイルを空にする
+true > "$logfile"
+
+# nlsr をバックグラウンドで実行し、エラーログを保存
+nlsr -f "$NLSR_CONFIG_FILE_PATH" > /dev/null 2> "$logfile" &
 pid=$!
 
-# 少し待機してプロセスがすぐ落ちるか確認（例: 3秒）
+# 少し待機してプロセスが即時クラッシュしないか確認
 sleep 3
 
-# プロセスがまだ生きているか確認
+# プロセスが生きているかチェック
 if ! kill -0 $pid 2>/dev/null; then
   echo "Error: nlsr failed to start." >&2
+  echo "==== Error Output ====" >&2
+  cat "$logfile" >&2  # エラーログの内容を標準エラーに出力
   exit 1
 fi
 
