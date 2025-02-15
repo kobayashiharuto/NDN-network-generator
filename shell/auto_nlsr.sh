@@ -13,8 +13,8 @@ fi
 echo "Using NLSR configuration file: $NLSR_CONFIG_FILE_PATH"
 
 # nlsr.conf へのシンボリックリンクを作成
-rm -f /var/lib/nlsr/nlsr.conf
-ln -s "$NLSR_CONFIG_FILE_PATH" /var/lib/nlsr/nlsr.conf
+rm -f ./nlsr.conf
+cp "$NLSR_CONFIG_FILE_PATH" /tmp/nlsr.conf
 
 logfile="/tmp/nlsr_error.log"
 
@@ -22,7 +22,7 @@ logfile="/tmp/nlsr_error.log"
 true > "$logfile"
 
 # nlsr をバックグラウンドで実行し、エラーログを保存
-nlsr > /dev/null 2> "$logfile" &
+nlsr -f /tmp/nlsr.conf > /dev/null 2> "$logfile" &
 pid=$!
 
 # 少し待機してプロセスが即時クラッシュしないか確認
